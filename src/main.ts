@@ -1,29 +1,22 @@
 import "./style.css";
+import { EditorApp } from "./presentation/editor-app";
+import { InMemoryMoleculeRepository } from "./infrastructure/repositories/in-memory-molecule-repository";
+import { CreateMoleculeService } from "./application/use-cases/create-molecule.service";
+import { AddAtomService } from "./application/use-cases/add-atom.service";
+import { CreateBondService } from "./application/use-cases/create-bond.service";
 
-const appElement = document.querySelector<HTMLDivElement>("#app")!;
+const container = document.querySelector<HTMLDivElement>("#app")!;
 
-appElement.innerHTML = `
-  <div class="chem-editor-container">
-    <div class="chem-toolbar">
-      <button class="chem-tool-btn" data-tool="atom">Atom (C)</button>
-      <button class="chem-tool-btn" data-tool="bond">Bond</button>
-      <button class="chem-tool-btn" data-tool="eraser">Eraser</button>
-      <button class="chem-tool-btn" data-tool="clear">Clear All</button>
-    </div>
-    <div class="chem-canvas-container">
-      <canvas id="chem-canvas"></canvas>
-    </div>
-  </div>
-`;
+const repository = new InMemoryMoleculeRepository();
 
-const canvas = document.querySelector<HTMLCanvasElement>("#chem-canvas")!;
+const createMoleculeService = new CreateMoleculeService(repository);
+const addAtomService = new AddAtomService(repository);
+const createBondService = new CreateBondService(repository);
 
-const resizeCanvas = () => {
-  canvas.width = window.innerWidth - 60;
-  canvas.height = window.innerHeight;
-};
-
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
-
-console.log("ChemDraw Clone Initialized");
+new EditorApp(
+  container,
+  repository,
+  createMoleculeService,
+  addAtomService,
+  createBondService,
+).run();
