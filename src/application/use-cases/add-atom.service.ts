@@ -9,8 +9,6 @@ export class AddAtomCommand {
   constructor(
     public readonly moleculeId: EntityId,
     public readonly symbol: string,
-    public readonly x: number,
-    public readonly y: number,
   ) {}
 }
 

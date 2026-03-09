@@ -29,7 +29,7 @@ export class DrawTool implements Tool {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    const command = new AddAtomCommand(this.moleculeId, "C", x, y);
+    const command = new AddAtomCommand(this.moleculeId, "C");
     await this.service
       .execute(command)
       .map((atomId) =>
