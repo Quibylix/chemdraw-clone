@@ -58,16 +58,15 @@ export class Molecule extends AggregateRoot {
 
     const exists = this._bonds.some(
       (b) =>
-        (b.atoms[0].id === atomAId && b.atoms[1].id === atomBId) ||
-        (b.atoms[0].id === atomBId && b.atoms[1].id === atomAId),
+        (b.atomIds[0] === atomAId && b.atomIds[1] === atomBId) ||
+        (b.atomIds[0] === atomBId && b.atomIds[1] === atomAId),
     );
 
     if (exists) {
       return err(new Error("A bond already exists between these atoms"));
     }
 
-    const bondId = crypto.randomUUID();
-    const bondResult = Bond.create(bondId, [atomA, atomB], type);
+    const bondResult = Bond.create([atomAId, atomBId], type);
 
     if (bondResult.isErr()) {
       return err(bondResult.error);

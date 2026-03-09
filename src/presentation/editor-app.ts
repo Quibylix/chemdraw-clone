@@ -104,8 +104,8 @@ export class EditorApp {
         this.renderer.clear();
 
         molecule.bonds.forEach((bond) => {
-          const start = this.scene.getPosition(bond.atoms[0].id);
-          const end = this.scene.getPosition(bond.atoms[1].id);
+          const start = this.scene.getPosition(bond.atomIds[0]);
+          const end = this.scene.getPosition(bond.atomIds[1]);
           if (start && end) {
             this.renderer.drawBond(start, end);
           }
