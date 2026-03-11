@@ -1,4 +1,3 @@
-import { Atom } from "../domain/entities/atom";
 import { ScreenPoint } from "./screen-point";
 
 export class CanvasRenderer {
@@ -17,12 +16,12 @@ export class CanvasRenderer {
   }
 
   public drawAtom(
-    atom: Atom,
+    atom: { symbol: string },
     position: ScreenPoint,
     highlighted: boolean = false,
   ) {
     const { x, y } = position;
-    const symbol = atom.element.symbol;
+    const symbol = atom.symbol;
 
     this.ctx.beginPath();
     this.ctx.arc(x, y, 15, 0, Math.PI * 2);

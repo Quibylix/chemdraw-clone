@@ -115,7 +115,11 @@ export class EditorApp {
           const position = this.scene.getPosition(atom.id);
           if (position) {
             const isHovered = this.scene.hoveredAtomId === atom.id;
-            this.renderer.drawAtom(atom, position, isHovered);
+            this.renderer.drawAtom(
+              { symbol: atom.element.symbol },
+              position,
+              isHovered,
+            );
           }
         });
       },
