@@ -7,6 +7,8 @@ export class AddAtomCommand {
   constructor(
     public readonly moleculeId: EntityId,
     public readonly symbol: string,
+    public readonly x: number,
+    public readonly y: number,
   ) {}
 }
 
@@ -19,7 +21,7 @@ export class AddAtomService implements ApplicationService<
   public execute(command: AddAtomCommand): ResultAsync<EntityId, Error> {
     return this.repository.findById(command.moleculeId).andThen((molecule) => {
       return molecule
-        .addAtom(command.symbol)
+        .addAtom(command.symbol, command.x, command.y)
         .asyncAndThen((atom) =>
           this.repository.save(molecule).map(() => atom.id),
         );
