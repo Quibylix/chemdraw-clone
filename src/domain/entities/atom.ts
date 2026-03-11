@@ -6,6 +6,8 @@ export class Atom extends Entity {
   private constructor(
     id: EntityId,
     public readonly element: ChemicalElement,
+    public readonly x: number,
+    public readonly y: number,
   ) {
     super(id);
   }
@@ -13,11 +15,13 @@ export class Atom extends Entity {
   public static create(
     id: EntityId,
     element: ChemicalElement,
+    x: number,
+    y: number,
   ): Result<Atom, Error> {
     if (!element.symbol) {
       return err(new Error("Atom must have a chemical symbol"));
     }
 
-    return ok(new Atom(id, element));
+    return ok(new Atom(id, element, x, y));
   }
 }

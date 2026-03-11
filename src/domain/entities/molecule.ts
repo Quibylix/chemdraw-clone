@@ -28,11 +28,11 @@ export class Molecule extends AggregateRoot {
     return [...this._bonds];
   }
 
-  public addAtom(symbol: string): Result<Atom, Error> {
+  public addAtom(symbol: string, x: number, y: number): Result<Atom, Error> {
     const element = new ChemicalElement({ symbol });
     const id = crypto.randomUUID();
 
-    const atomResult = Atom.create(id, element);
+    const atomResult = Atom.create(id, element, x, y);
 
     if (atomResult.isErr()) {
       return err(atomResult.error);
@@ -42,6 +42,18 @@ export class Molecule extends AggregateRoot {
     this._atoms.set(atom.id, atom);
 
     return ok(atom);
+  }
+
+  public findAtomAt(x: number, y: number, radius: number = 20): Atom | null {
+    for (const atom of this._atoms.values()) {
+      const distance = Math.sqrt(
+        Math.pow(atom.x - x, 2) + Math.pow(atom.y - y, 2),
+      );
+      if (distance <= radius) {
+        return atom;
+      }
+    }
+    return null;
   }
 
   public addBond(
