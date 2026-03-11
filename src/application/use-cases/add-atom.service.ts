@@ -1,7 +1,5 @@
-import { ResultAsync, okAsync } from "neverthrow";
+import { ResultAsync } from "neverthrow";
 import { EntityId } from "../../domain/base/entity.base";
-import { Atom } from "../../domain/entities/atom";
-import { ChemicalElement } from "../../domain/value-objects/chemical-element";
 import { ApplicationService } from "../base/application-service.base";
 import { MoleculeRepository } from "../../domain/repositories/molecule-repository";
 
@@ -20,15 +18,11 @@ export class AddAtomService implements ApplicationService<
 
   public execute(command: AddAtomCommand): ResultAsync<EntityId, Error> {
     return this.repository.findById(command.moleculeId).andThen((molecule) => {
-      const id = crypto.randomUUID();
-      const element = new ChemicalElement({ symbol: command.symbol });
-
-      return Atom.create(id, element)
+      return molecule
+        .addAtom(command.symbol)
         .asyncAndThen((atom) =>
-          molecule.addAtom(atom).asyncAndThen(() => okAsync(molecule)),
-        )
-        .andThen(() => this.repository.save(molecule))
-        .map(() => id);
+          this.repository.save(molecule).map(() => atom.id),
+        );
     });
   }
 }

@@ -1,6 +1,7 @@
 import { AggregateRoot } from "../base/aggregate-root.base";
 import { EntityId } from "../base/entity.base";
 import { Atom } from "./atom";
+import { ChemicalElement } from "../value-objects/chemical-element";
 import { Bond, BondType } from "./bond";
 import { Result, ok, err } from "neverthrow";
 
@@ -27,15 +28,20 @@ export class Molecule extends AggregateRoot {
     return [...this._bonds];
   }
 
-  public addAtom(atom: Atom): Result<void, Error> {
-    if (this._atoms.has(atom.id)) {
-      return err(
-        new Error(`Atom with id ${atom.id} already exists in molecule`),
-      );
+  public addAtom(symbol: string): Result<Atom, Error> {
+    const element = new ChemicalElement({ symbol });
+    const id = crypto.randomUUID();
+
+    const atomResult = Atom.create(id, element);
+
+    if (atomResult.isErr()) {
+      return err(atomResult.error);
     }
 
+    const atom = atomResult.value;
     this._atoms.set(atom.id, atom);
-    return ok(undefined);
+
+    return ok(atom);
   }
 
   public addBond(
