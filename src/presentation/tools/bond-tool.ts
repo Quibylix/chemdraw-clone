@@ -8,6 +8,10 @@ import { Tool } from "./tool";
 import { PresentationEvents } from "../base/presentation-events";
 import { BondAdded } from "../events/bond-added";
 import { HoverChanged } from "../events/hover-changed";
+import {
+  FindAtomAtQuery,
+  FindAtomAtService,
+} from "../../application/use-cases/find-atom-at.service";
 
 export class BondTool implements Tool {
   private firstSelectedAtomId: EntityId | null = null;
@@ -16,7 +20,8 @@ export class BondTool implements Tool {
     private canvas: HTMLCanvasElement,
     private scene: Scene,
     private moleculeId: EntityId,
-    private service: CreateBondService,
+    private bondService: CreateBondService,
+    private findAtomService: FindAtomAtService,
   ) {
     this.handleClick = this.handleClick.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -35,14 +40,14 @@ export class BondTool implements Tool {
     PresentationEvents.dispatch(new HoverChanged(null));
   }
 
-  private handleMouseMove(event: MouseEvent): void {
+  private async handleMouseMove(event: MouseEvent): Promise<void> {
     const rect = this.canvas.getBoundingClientRect();
-    const point = {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    };
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
 
-    const atomId = this.scene.findAtomAt(point);
+    const atomId = await this.findAtomService
+      .execute(new FindAtomAtQuery(this.moleculeId, x, y))
+      .unwrapOr(null);
 
     if (this.scene.hoveredAtomId !== atomId) {
       this.scene.hoveredAtomId = atomId;
@@ -52,12 +57,12 @@ export class BondTool implements Tool {
 
   private async handleClick(event: MouseEvent): Promise<void> {
     const rect = this.canvas.getBoundingClientRect();
-    const point = {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    };
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
 
-    const atomId = this.scene.findAtomAt(point);
+    const atomId = await this.findAtomService
+      .execute(new FindAtomAtQuery(this.moleculeId, x, y))
+      .unwrapOr(null);
 
     if (!atomId) return;
 
@@ -78,7 +83,7 @@ export class BondTool implements Tool {
     );
 
     const firstSelectedAtomId = this.firstSelectedAtomId;
-    await this.service
+    await this.bondService
       .execute(command)
       .map(() =>
         PresentationEvents.dispatch(new BondAdded(firstSelectedAtomId, atomId)),

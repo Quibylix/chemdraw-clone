@@ -11,6 +11,11 @@ import { MoleculeRepository } from "../domain/repositories/molecule-repository";
 import { CreateMoleculeService } from "../application/use-cases/create-molecule.service";
 import { AddAtomService } from "../application/use-cases/add-atom.service";
 import { CreateBondService } from "../application/use-cases/create-bond.service";
+import {
+  GetMoleculeQuery,
+  GetMoleculeService,
+} from "../application/use-cases/get-molecule.service";
+import { FindAtomAtService } from "../application/use-cases/find-atom-at.service";
 
 const availableTools = {
   atom: "🟢 Átomo",
@@ -25,6 +30,8 @@ export class EditorApp {
   private isUpdatePending = false;
 
   private activeMoleculeId: string = "";
+  private getMoleculeService: GetMoleculeService;
+  private findAtomService: FindAtomAtService;
 
   constructor(
     private container: HTMLElement,
@@ -33,6 +40,8 @@ export class EditorApp {
     private readonly addAtomService: AddAtomService,
     private readonly createBondService: CreateBondService,
   ) {
+    this.getMoleculeService = new GetMoleculeService(this.repository);
+    this.findAtomService = new FindAtomAtService(this.repository);
     this.canvas = document.createElement("canvas");
     this.renderer = new CanvasRenderer(this.canvas);
 
@@ -99,38 +108,38 @@ export class EditorApp {
   private redraw() {
     if (!this.activeMoleculeId) return;
 
-    this.repository.findById(this.activeMoleculeId).match(
-      (molecule) => {
-        this.renderer.clear();
+    this.getMoleculeService
+      .execute(new GetMoleculeQuery(this.activeMoleculeId))
+      .match(
+        (moleculeDto) => {
+          this.renderer.clear();
 
-        molecule.bonds.forEach((bond) => {
-          const start = this.scene.getPosition(bond.atomIds[0]);
-          const end = this.scene.getPosition(bond.atomIds[1]);
-          if (start && end) {
-            this.renderer.drawBond(start, end);
-          }
-        });
+          moleculeDto.bonds.forEach((bond) => {
+            const atomA = moleculeDto.atoms.find((a) => a.id === bond.atomAId);
+            const atomB = moleculeDto.atoms.find((a) => a.id === bond.atomBId);
+            if (atomA && atomB) {
+              this.renderer.drawBond(
+                { x: atomA.x, y: atomA.y },
+                { x: atomB.x, y: atomB.y },
+              );
+            }
+          });
 
-        molecule.atoms.forEach((atom) => {
-          const position = this.scene.getPosition(atom.id);
-          if (position) {
+          moleculeDto.atoms.forEach((atom) => {
             const isHovered = this.scene.hoveredAtomId === atom.id;
             this.renderer.drawAtom(
-              { symbol: atom.element.symbol },
-              position,
+              { symbol: atom.symbol },
+              { x: atom.x, y: atom.y },
               isHovered,
             );
-          }
-        });
-      },
-      (error) => console.error(error),
-    );
+          });
+        },
+        (error) => console.error(error),
+      );
   }
 
   private subscribeToEvents() {
-    PresentationEvents.subscribe(AtomAdded, (event) => {
-      const position = { x: event.x, y: event.y };
-      this.scene.addAtom(event.atomId, position);
+    PresentationEvents.subscribe(AtomAdded, () => {
       this.requestRedraw();
     });
 
@@ -195,6 +204,7 @@ export class EditorApp {
           this.scene,
           this.activeMoleculeId,
           this.createBondService,
+          this.findAtomService,
         );
         break;
       default:
