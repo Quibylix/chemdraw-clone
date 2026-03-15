@@ -19,14 +19,34 @@ export class CanvasRenderer {
     atom: { symbol: string },
     position: ScreenPoint,
     highlighted: boolean = false,
+    hasBonds: boolean = false,
   ) {
     const { x, y } = position;
     const symbol = atom.symbol;
 
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, 15, 0, Math.PI * 2);
-    this.ctx.fillStyle = highlighted ? "#def" : "#fff";
-    this.ctx.fill();
+    const isBondedCarbon = symbol === "C" && hasBonds;
+
+    if (highlighted) {
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, 15, 0, Math.PI * 2);
+      this.ctx.fillStyle = "#defa";
+      this.ctx.fill();
+    }
+
+    if (isBondedCarbon) {
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, 2, 0, Math.PI * 2);
+      this.ctx.fillStyle = "#333";
+      this.ctx.fill();
+      return;
+    }
+
+    if (!highlighted) {
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, 15, 0, Math.PI * 2);
+      this.ctx.fillStyle = "#fff";
+      this.ctx.fill();
+    }
 
     this.ctx.font = "20px Arial";
     this.ctx.textAlign = "center";

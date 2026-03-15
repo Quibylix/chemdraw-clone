@@ -12,6 +12,7 @@ import { CreateMoleculeService } from "../application/use-cases/create-molecule.
 import { AddAtomService } from "../application/use-cases/add-atom.service";
 import { CreateBondService } from "../application/use-cases/create-bond.service";
 import {
+  AtomDTO,
   GetMoleculeQuery,
   GetMoleculeService,
 } from "../application/use-cases/get-molecule.service";
@@ -125,12 +126,27 @@ export class EditorApp {
             }
           });
 
-          moleculeDto.atoms.forEach((atom) => {
+          const bondedAtomIds = new Set(
+            moleculeDto.bonds.flatMap((b) => [b.atomAId, b.atomBId]),
+          );
+
+          const atomSortingFn = (a: AtomDTO, b: AtomDTO) => {
+            const aHighlighted = this.scene.hoveredAtomId === a.id;
+            const bHighlighted = this.scene.hoveredAtomId === b.id;
+            if (aHighlighted && !bHighlighted) return 1;
+            if (!aHighlighted && bHighlighted) return -1;
+            return 0;
+          };
+
+          moleculeDto.atoms.sort(atomSortingFn).forEach((atom) => {
             const isHovered = this.scene.hoveredAtomId === atom.id;
+            const hasBonds = bondedAtomIds.has(atom.id);
+
             this.renderer.drawAtom(
               { symbol: atom.symbol },
               { x: atom.x, y: atom.y },
               isHovered,
+              hasBonds,
             );
           });
         },
