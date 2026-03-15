@@ -1,8 +1,11 @@
 import { Entity, EntityId } from "../base/entity.base";
 import { ChemicalElement } from "../value-objects/chemical-element";
 import { Result, ok, err } from "neverthrow";
+import { Bond } from "./bond";
 
 export class Atom extends Entity {
+  private _bonds: Bond[] = [];
+
   private constructor(
     id: EntityId,
     public readonly element: ChemicalElement,
@@ -23,5 +26,22 @@ export class Atom extends Entity {
     }
 
     return ok(new Atom(id, element, x, y));
+  }
+
+  public get bonds(): readonly Bond[] {
+    return [...this._bonds];
+  }
+
+  public addBond(bond: Bond): Result<void, Error> {
+    if (this._bonds.some((b) => b.equals(bond))) {
+      return err(new Error("Bond already exists for this atom"));
+    }
+
+    if (!bond.atomIds.includes(this.id)) {
+      return err(new Error("Bond must connect to this atom"));
+    }
+
+    this._bonds.push(bond);
+    return ok(undefined);
   }
 }
