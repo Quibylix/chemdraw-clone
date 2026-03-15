@@ -4,6 +4,7 @@ import { Atom } from "./atom";
 import { ChemicalElement } from "../value-objects/chemical-element";
 import { Bond, BondType } from "./bond";
 import { Result, ok, err } from "neverthrow";
+import { ElementSymbol } from "../value-objects/elements";
 
 export class Molecule extends AggregateRoot {
   private _atoms: Map<EntityId, Atom> = new Map();
@@ -31,8 +32,18 @@ export class Molecule extends AggregateRoot {
     return Array.from(bondsSet);
   }
 
-  public addAtom(symbol: string, x: number, y: number): Result<Atom, Error> {
-    const element = new ChemicalElement({ symbol });
+  public addAtom(
+    symbol: ElementSymbol,
+    x: number,
+    y: number,
+  ): Result<Atom, Error> {
+    const elementResult = ChemicalElement.create(symbol);
+
+    if (elementResult.isErr()) {
+      return err(elementResult.error);
+    }
+
+    const element = elementResult.value;
     const id = crypto.randomUUID();
 
     const atomResult = Atom.create(id, element, x, y);
