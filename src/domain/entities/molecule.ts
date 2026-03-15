@@ -7,7 +7,6 @@ import { Result, ok, err } from "neverthrow";
 
 export class Molecule extends AggregateRoot {
   private _atoms: Map<EntityId, Atom> = new Map();
-  private _bonds: Bond[] = [];
 
   private constructor(id: EntityId) {
     super(id);
@@ -25,7 +24,11 @@ export class Molecule extends AggregateRoot {
   }
 
   get bonds(): readonly Bond[] {
-    return [...this._bonds];
+    const bondsSet = new Set<Bond>();
+    this._atoms.forEach((atom) => {
+      atom.bonds.forEach((bond) => bondsSet.add(bond));
+    });
+    return Array.from(bondsSet);
   }
 
   public addAtom(symbol: string, x: number, y: number): Result<Atom, Error> {
@@ -45,15 +48,17 @@ export class Molecule extends AggregateRoot {
   }
 
   public findAtomAt(x: number, y: number, radius: number = 20): Atom | null {
-    for (const atom of this._atoms.values()) {
-      const distance = Math.sqrt(
-        Math.pow(atom.x - x, 2) + Math.pow(atom.y - y, 2),
-      );
-      if (distance <= radius) {
-        return atom;
-      }
-    }
-    return null;
+    return (
+      [...this._atoms.values()]
+        .map((atom) => ({
+          atom: atom,
+          distance: Math.sqrt(
+            Math.pow(atom.x - x, 2) + Math.pow(atom.y - y, 2),
+          ),
+        }))
+        .filter(({ distance }) => distance <= radius)
+        .sort((a, b) => a.distance - b.distance)[0]?.atom || null
+    );
   }
 
   public addBond(
@@ -70,20 +75,6 @@ export class Molecule extends AggregateRoot {
       );
     }
 
-    if (atomAId === atomBId) {
-      return err(new Error("A bond cannot connect an atom to itself"));
-    }
-
-    const exists = this._bonds.some(
-      (b) =>
-        (b.atomIds[0] === atomAId && b.atomIds[1] === atomBId) ||
-        (b.atomIds[0] === atomBId && b.atomIds[1] === atomAId),
-    );
-
-    if (exists) {
-      return err(new Error("A bond already exists between these atoms"));
-    }
-
     const bondResult = Bond.create([atomAId, atomBId], type);
 
     if (bondResult.isErr()) {
@@ -91,7 +82,9 @@ export class Molecule extends AggregateRoot {
     }
 
     const bond = bondResult.value;
-    this._bonds.push(bond);
+
+    this._atoms.get(atomAId)?.addBond(bond);
+    this._atoms.get(atomBId)?.addBond(bond);
 
     return ok(bond);
   }
