@@ -83,9 +83,9 @@ export class Molecule extends AggregateRoot {
 
     const bond = bondResult.value;
 
-    this._atoms.get(atomAId)?.addBond(bond);
-    this._atoms.get(atomBId)?.addBond(bond);
-
-    return ok(bond);
+    return atomA
+      .addBond(bond)
+      .andThen(() => atomB.addBond(bond))
+      .map(() => bond);
   }
 }
