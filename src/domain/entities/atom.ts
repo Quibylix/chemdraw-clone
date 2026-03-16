@@ -44,4 +44,14 @@ export class Atom extends Entity {
     this._bonds.push(bond);
     return ok(undefined);
   }
+
+  public removeBond(bond: Bond): Result<void, Error> {
+    const index = this._bonds.findIndex((b) => b.equals(bond));
+    if (index === -1) {
+      return err(new Error("Bond not found on this atom"));
+    }
+
+    this._bonds.splice(index, 1);
+    return ok();
+  }
 }

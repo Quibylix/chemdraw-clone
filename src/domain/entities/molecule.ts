@@ -99,4 +99,63 @@ export class Molecule extends AggregateRoot {
       .andThen(() => atomB.addBond(bond))
       .map(() => bond);
   }
+
+  public removeAtom(atomId: EntityId): Result<void, Error> {
+    const atom = this._atoms.get(atomId);
+
+    if (!atom) {
+      return err(new Error("Atom not found in molecule"));
+    }
+
+    const bondsToRemove = atom.bonds;
+    for (const bond of bondsToRemove) {
+      const otherAtomId = bond.atomIds.find((id) => id !== atomId);
+
+      if (!otherAtomId) {
+        throw new Error("Invalid bond: does not connect to another atom");
+      }
+
+      const otherAtom = this._atoms.get(otherAtomId);
+      if (!otherAtom) {
+        throw new Error("Invalid bond: other atom not found in molecule");
+      }
+
+      const removeResult = otherAtom.removeBond(bond);
+      if (removeResult.isErr()) {
+        return err(removeResult.error);
+      }
+    }
+
+    this._atoms.delete(atomId);
+    return ok();
+  }
+
+  public removeBond(atomAId: EntityId, atomBId: EntityId): Result<void, Error> {
+    const atomA = this._atoms.get(atomAId);
+    const atomB = this._atoms.get(atomBId);
+
+    if (!atomA || !atomB) {
+      return err(new Error("Both atoms must exist in the molecule"));
+    }
+
+    const bond = atomA.bonds.find(
+      (b) => b.atomIds.includes(atomAId) && b.atomIds.includes(atomBId),
+    );
+
+    if (!bond) {
+      return err(new Error("Bond does not exist between these atoms"));
+    }
+
+    const resultA = atomA.removeBond(bond);
+    if (resultA.isErr()) {
+      return err(resultA.error);
+    }
+
+    const resultB = atomB.removeBond(bond);
+    if (resultB.isErr()) {
+      return err(resultB.error);
+    }
+
+    return ok();
+  }
 }
