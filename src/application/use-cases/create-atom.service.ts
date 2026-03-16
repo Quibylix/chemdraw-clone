@@ -4,7 +4,7 @@ import { ApplicationService } from "../base/application-service.base";
 import { MoleculeRepository } from "../../domain/repositories/molecule-repository";
 import { ElementSymbol } from "../../domain/value-objects/elements";
 
-export class AddAtomCommand {
+export class CreateAtomCommand {
   constructor(
     public readonly moleculeId: EntityId,
     public readonly symbol: ElementSymbol,
@@ -13,13 +13,13 @@ export class AddAtomCommand {
   ) {}
 }
 
-export class AddAtomService implements ApplicationService<
-  AddAtomCommand,
+export class CreateAtomService implements ApplicationService<
+  CreateAtomCommand,
   EntityId
 > {
   constructor(private repository: MoleculeRepository) {}
 
-  public execute(command: AddAtomCommand): ResultAsync<EntityId, Error> {
+  public execute(command: CreateAtomCommand): ResultAsync<EntityId, Error> {
     return this.repository.findById(command.moleculeId).andThen((molecule) => {
       return molecule
         .addAtom(command.symbol, command.x, command.y)
