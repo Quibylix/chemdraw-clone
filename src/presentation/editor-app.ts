@@ -236,7 +236,6 @@ export class EditorApp {
       case "bond":
         tool = new BondTool(
           this.canvas,
-          this.scene,
           this.activeMoleculeId,
           this.createBondService,
           this.findAtomService,
@@ -253,7 +252,6 @@ export class EditorApp {
       case "delete":
         tool = new DeleteTool(
           this.canvas,
-          this.scene,
           this.activeMoleculeId,
           this.deleteAtomService,
           this.findAtomService,

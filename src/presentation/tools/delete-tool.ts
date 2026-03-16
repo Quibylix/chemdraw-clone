@@ -10,13 +10,13 @@ import {
 import { PresentationEvents } from "../base/presentation-events";
 import { AtomRemoved } from "../events/atom-removed";
 import { HoverChanged } from "../events/hover-changed";
-import { Scene } from "../scene";
 import { Tool } from "./tool";
 
 export class DeleteTool implements Tool {
+  private hoveredAtomId: EntityId | null = null;
+
   constructor(
     private canvas: HTMLCanvasElement,
-    private scene: Scene,
     private moleculeId: EntityId,
     private deleteAtomService: DeleteAtomService,
     private findAtomService: FindAtomAtService,
@@ -33,7 +33,7 @@ export class DeleteTool implements Tool {
   deactivate() {
     this.canvas.removeEventListener("click", this.handleClick);
     this.canvas.removeEventListener("mousemove", this.handleMouseMove);
-    this.scene.hoveredAtomId = null;
+    this.hoveredAtomId = null;
     PresentationEvents.dispatch(new HoverChanged(null));
   }
 
@@ -46,8 +46,8 @@ export class DeleteTool implements Tool {
       .execute(new FindAtomAtQuery(this.moleculeId, x, y))
       .unwrapOr(null);
 
-    if (this.scene.hoveredAtomId !== atomId) {
-      this.scene.hoveredAtomId = atomId;
+    if (this.hoveredAtomId !== atomId) {
+      this.hoveredAtomId = atomId;
       PresentationEvents.dispatch(new HoverChanged(atomId));
     }
   }

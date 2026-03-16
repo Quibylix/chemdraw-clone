@@ -3,7 +3,6 @@ import {
   CreateBondCommand,
   CreateBondService,
 } from "../../application/use-cases/create-bond.service";
-import { Scene } from "../scene";
 import { Tool } from "./tool";
 import { PresentationEvents } from "../base/presentation-events";
 import { BondAdded } from "../events/bond-added";
@@ -15,10 +14,10 @@ import {
 
 export class BondTool implements Tool {
   private firstSelectedAtomId: EntityId | null = null;
+  private hoveredAtomId: EntityId | null = null;
 
   constructor(
     private canvas: HTMLCanvasElement,
-    private scene: Scene,
     private moleculeId: EntityId,
     private bondService: CreateBondService,
     private findAtomService: FindAtomAtService,
@@ -36,7 +35,7 @@ export class BondTool implements Tool {
     this.canvas.removeEventListener("click", this.handleClick);
     this.canvas.removeEventListener("mousemove", this.handleMouseMove);
     this.firstSelectedAtomId = null;
-    this.scene.hoveredAtomId = null;
+    this.hoveredAtomId = null;
     PresentationEvents.dispatch(new HoverChanged(null));
   }
 
@@ -49,8 +48,8 @@ export class BondTool implements Tool {
       .execute(new FindAtomAtQuery(this.moleculeId, x, y))
       .unwrapOr(null);
 
-    if (this.scene.hoveredAtomId !== atomId) {
-      this.scene.hoveredAtomId = atomId;
+    if (this.hoveredAtomId !== atomId) {
+      this.hoveredAtomId = atomId;
       PresentationEvents.dispatch(new HoverChanged(atomId));
     }
   }
