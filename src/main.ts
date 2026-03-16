@@ -5,6 +5,7 @@ import { CreateMoleculeService } from "./application/use-cases/create-molecule.s
 import { CreateAtomService } from "./application/use-cases/create-atom.service";
 import { CreateBondService } from "./application/use-cases/create-bond.service";
 import { DeleteAtomService } from "./application/use-cases/delete-atom.service";
+import { UpdateAtomService } from "./application/use-cases/update-atom.service";
 
 const container = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -14,6 +15,7 @@ const createMoleculeService = new CreateMoleculeService(repository);
 const createAtomService = new CreateAtomService(repository);
 const createBondService = new CreateBondService(repository);
 const deleteAtomService = new DeleteAtomService(repository);
+const updateAtomService = new UpdateAtomService(repository);
 
 new EditorApp(
   container,
@@ -22,4 +24,5 @@ new EditorApp(
   createAtomService,
   createBondService,
   deleteAtomService,
+  updateAtomService,
 ).run();

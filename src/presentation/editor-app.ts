@@ -4,9 +4,11 @@ import { Tool } from "./tools/tool";
 import { DrawTool } from "./tools/draw-tool";
 import { BondTool } from "./tools/bond-tool";
 import { DeleteTool } from "./tools/delete-tool";
+import { EditTool } from "./tools/edit-tool";
 import { HoverChanged } from "./events/hover-changed";
 import { AtomAdded } from "./events/atom-added";
 import { AtomRemoved } from "./events/atom-removed";
+import { AtomUpdated } from "./events/atom-updated";
 import { BondAdded } from "./events/bond-added";
 import { PresentationEvents } from "./base/presentation-events";
 import { MoleculeRepository } from "../domain/repositories/molecule-repository";
@@ -14,6 +16,7 @@ import { CreateMoleculeService } from "../application/use-cases/create-molecule.
 import { CreateAtomService } from "../application/use-cases/create-atom.service";
 import { CreateBondService } from "../application/use-cases/create-bond.service";
 import { DeleteAtomService } from "../application/use-cases/delete-atom.service";
+import { UpdateAtomService } from "../application/use-cases/update-atom.service";
 import {
   AtomDTO,
   GetMoleculeQuery,
@@ -24,6 +27,7 @@ import { FindAtomAtService } from "../application/use-cases/find-atom-at.service
 const availableTools = {
   atom: "🟢 Átomo",
   bond: "🔗 Enlace",
+  edit: "✏️ Editar",
   delete: "🗑️ Borrar",
 };
 
@@ -45,6 +49,7 @@ export class EditorApp {
     private readonly createAtomService: CreateAtomService,
     private readonly createBondService: CreateBondService,
     private readonly deleteAtomService: DeleteAtomService,
+    private readonly updateAtomService: UpdateAtomService,
   ) {
     this.getMoleculeService = new GetMoleculeService(this.repository);
     this.findAtomService = new FindAtomAtService(this.repository);
@@ -168,11 +173,16 @@ export class EditorApp {
       this.requestRedraw();
     });
 
+    PresentationEvents.subscribe(AtomUpdated, () => {
+      this.requestRedraw();
+    });
+
     PresentationEvents.subscribe(BondAdded, () => {
       this.requestRedraw();
     });
 
-    PresentationEvents.subscribe(HoverChanged, () => {
+    PresentationEvents.subscribe(HoverChanged, (e) => {
+      this.scene.hoveredAtomId = e.atomId;
       this.requestRedraw();
     });
   }
@@ -229,6 +239,14 @@ export class EditorApp {
           this.scene,
           this.activeMoleculeId,
           this.createBondService,
+          this.findAtomService,
+        );
+        break;
+      case "edit":
+        tool = new EditTool(
+          this.canvas,
+          this.activeMoleculeId,
+          this.updateAtomService,
           this.findAtomService,
         );
         break;
