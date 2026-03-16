@@ -1,7 +1,7 @@
 import {
-  AddAtomCommand,
-  AddAtomService,
-} from "../../application/use-cases/add-atom.service";
+  CreateAtomCommand,
+  CreateAtomService,
+} from "../../application/use-cases/create-atom.service";
 import { EntityId } from "../../domain/base/entity.base";
 import { PresentationEvents } from "../base/presentation-events";
 import { AtomAdded } from "../events/atom-added";
@@ -11,7 +11,7 @@ export class DrawTool implements Tool {
   constructor(
     private canvas: HTMLCanvasElement,
     private moleculeId: EntityId,
-    private service: AddAtomService,
+    private service: CreateAtomService,
   ) {
     this.handleClick = this.handleClick.bind(this);
   }
@@ -29,10 +29,10 @@ export class DrawTool implements Tool {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    const command = new AddAtomCommand(this.moleculeId, "C", x, y);
+    const command = new CreateAtomCommand(this.moleculeId, "C", x, y);
     await this.service
       .execute(command)
-      .map((atomId) =>
+      .map((atomId: string) =>
         PresentationEvents.dispatch(new AtomAdded(atomId, x, y)),
       );
   }

@@ -3,14 +3,17 @@ import { Scene } from "./scene";
 import { Tool } from "./tools/tool";
 import { DrawTool } from "./tools/draw-tool";
 import { BondTool } from "./tools/bond-tool";
+import { DeleteTool } from "./tools/delete-tool";
 import { HoverChanged } from "./events/hover-changed";
 import { AtomAdded } from "./events/atom-added";
+import { AtomRemoved } from "./events/atom-removed";
 import { BondAdded } from "./events/bond-added";
 import { PresentationEvents } from "./base/presentation-events";
 import { MoleculeRepository } from "../domain/repositories/molecule-repository";
 import { CreateMoleculeService } from "../application/use-cases/create-molecule.service";
-import { AddAtomService } from "../application/use-cases/add-atom.service";
+import { CreateAtomService } from "../application/use-cases/create-atom.service";
 import { CreateBondService } from "../application/use-cases/create-bond.service";
+import { DeleteAtomService } from "../application/use-cases/delete-atom.service";
 import {
   AtomDTO,
   GetMoleculeQuery,
@@ -21,6 +24,7 @@ import { FindAtomAtService } from "../application/use-cases/find-atom-at.service
 const availableTools = {
   atom: "🟢 Átomo",
   bond: "🔗 Enlace",
+  delete: "🗑️ Borrar",
 };
 
 export class EditorApp {
@@ -38,8 +42,9 @@ export class EditorApp {
     private container: HTMLElement,
     private readonly repository: MoleculeRepository,
     private readonly createMoleculeService: CreateMoleculeService,
-    private readonly addAtomService: AddAtomService,
+    private readonly createAtomService: CreateAtomService,
     private readonly createBondService: CreateBondService,
+    private readonly deleteAtomService: DeleteAtomService,
   ) {
     this.getMoleculeService = new GetMoleculeService(this.repository);
     this.findAtomService = new FindAtomAtService(this.repository);
@@ -159,6 +164,10 @@ export class EditorApp {
       this.requestRedraw();
     });
 
+    PresentationEvents.subscribe(AtomRemoved, () => {
+      this.requestRedraw();
+    });
+
     PresentationEvents.subscribe(BondAdded, () => {
       this.requestRedraw();
     });
@@ -211,7 +220,7 @@ export class EditorApp {
         tool = new DrawTool(
           this.canvas,
           this.activeMoleculeId,
-          this.addAtomService,
+          this.createAtomService,
         );
         break;
       case "bond":
@@ -220,6 +229,15 @@ export class EditorApp {
           this.scene,
           this.activeMoleculeId,
           this.createBondService,
+          this.findAtomService,
+        );
+        break;
+      case "delete":
+        tool = new DeleteTool(
+          this.canvas,
+          this.scene,
+          this.activeMoleculeId,
+          this.deleteAtomService,
           this.findAtomService,
         );
         break;
