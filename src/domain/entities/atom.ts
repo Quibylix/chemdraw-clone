@@ -8,11 +8,15 @@ export class Atom extends Entity {
 
   private constructor(
     id: EntityId,
-    public readonly element: ChemicalElement,
+    private _element: ChemicalElement,
     public readonly x: number,
     public readonly y: number,
   ) {
     super(id);
+  }
+
+  public get element(): ChemicalElement {
+    return this._element;
   }
 
   public static create(
@@ -52,6 +56,12 @@ export class Atom extends Entity {
     }
 
     this._bonds.splice(index, 1);
+    return ok();
+  }
+
+  public updateElement(element: ChemicalElement): Result<void, Error> {
+    this._element = element;
+
     return ok();
   }
 }

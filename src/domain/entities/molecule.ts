@@ -158,4 +158,28 @@ export class Molecule extends AggregateRoot {
 
     return ok();
   }
+
+  public updateAtomElement(
+    atomId: EntityId,
+    symbol: ElementSymbol,
+  ): Result<void, Error> {
+    const atom = this._atoms.get(atomId);
+    if (!atom) {
+      return err(new Error("Atom not found in molecule"));
+    }
+
+    const elementResult = ChemicalElement.create(symbol);
+    if (elementResult.isErr()) {
+      return err(elementResult.error);
+    }
+
+    const element = elementResult.value;
+
+    const updatedAtomResult = atom.updateElement(element);
+    if (updatedAtomResult.isErr()) {
+      return err(updatedAtomResult.error);
+    }
+
+    return ok();
+  }
 }
