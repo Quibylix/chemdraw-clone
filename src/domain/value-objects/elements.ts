@@ -6,7 +6,11 @@ export interface ElementData {
   commonValencies: number[];
 }
 
-export const ELEMENTS = {
+const createElementsMap = <T extends Record<string, ElementData>>(elements: {
+  [K in keyof T]: T[K] & { symbol: K };
+}) => elements;
+
+export const ELEMENTS = createElementsMap({
   H: {
     symbol: "H",
     name: "Hydrogen",
@@ -168,7 +172,7 @@ export const ELEMENTS = {
     atomicMass: 78.96,
     commonValencies: [2, 4, 6],
   },
-} satisfies Record<string, ElementData>;
+});
 
 export type ElementSymbol = keyof typeof ELEMENTS;
 
