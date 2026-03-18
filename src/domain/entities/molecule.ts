@@ -6,6 +6,10 @@ import { Bond, BondType } from "./bond";
 import { Result, ok, err } from "neverthrow";
 import { ElementSymbol } from "../value-objects/elements";
 
+export type AtomOrBondResult =
+  | { type: "atom"; item: Atom }
+  | { type: "bond"; item: Bond };
+
 export class Molecule extends AggregateRoot {
   private _atoms: Map<EntityId, Atom> = new Map();
 
@@ -70,6 +74,107 @@ export class Molecule extends AggregateRoot {
         .filter(({ distance }) => distance <= radius)
         .sort((a, b) => a.distance - b.distance)[0]?.atom || null
     );
+  }
+
+  public getAtomOrBondAt(
+    x: number,
+    y: number,
+    atomRadius: number = 20,
+    bondThreshold: number = 10,
+  ): AtomOrBondResult | null {
+    const atomCandidate = this.findClosestAtom(x, y, atomRadius);
+    const bondCandidate = this.findClosestBond(x, y, bondThreshold);
+
+    if (!atomCandidate && !bondCandidate) {
+      return null;
+    }
+
+    if (atomCandidate && !bondCandidate) {
+      return { type: "atom", item: atomCandidate.atom };
+    }
+
+    if (bondCandidate && !atomCandidate) {
+      return { type: "bond", item: bondCandidate.bond };
+    }
+
+    // Atoms always take priority over bonds when within detection radius
+    return { type: "atom", item: atomCandidate!.atom };
+  }
+
+  private findClosestAtom(
+    x: number,
+    y: number,
+    radius: number,
+  ): { atom: Atom; distance: number } | null {
+    const candidates = [...this._atoms.values()]
+      .map((atom) => ({
+        atom,
+        distance: Math.sqrt(Math.pow(atom.x - x, 2) + Math.pow(atom.y - y, 2)),
+      }))
+      .filter(({ distance }) => distance <= radius)
+      .sort((a, b) => a.distance - b.distance);
+
+    return candidates[0] || null;
+  }
+
+  private findClosestBond(
+    x: number,
+    y: number,
+    threshold: number,
+  ): { bond: Bond; distance: number } | null {
+    const candidates = this.bonds
+      .map((bond) => {
+        const atomA = this._atoms.get(bond.atomIds[0]);
+        const atomB = this._atoms.get(bond.atomIds[1]);
+
+        if (!atomA || !atomB) return null;
+
+        const distance = this.pointToSegmentDistance(
+          x,
+          y,
+          atomA.x,
+          atomA.y,
+          atomB.x,
+          atomB.y,
+        );
+
+        return { bond, distance };
+      })
+      .filter((c): c is { bond: Bond; distance: number } => c !== null)
+      .filter(({ distance }) => distance <= threshold)
+      .sort((a, b) => a.distance - b.distance);
+
+    return candidates[0] || null;
+  }
+
+  private pointToSegmentDistance(
+    px: number,
+    py: number,
+    ax: number,
+    ay: number,
+    bx: number,
+    by: number,
+  ): number {
+    const abx = bx - ax;
+    const aby = by - ay;
+    const apx = px - ax;
+    const apy = py - ay;
+
+    const abLengthSq = abx * abx + aby * aby;
+
+    if (abLengthSq === 0) {
+      return Math.sqrt(apx * apx + apy * apy);
+    }
+
+    const t = Math.max(0, Math.min(1, (apx * abx + apy * aby) / abLengthSq));
+
+    const closestX = ax + t * abx;
+    const closestY = ay + t * aby;
+
+    const dx = px - closestX;
+    const dy = py - closestY;
+
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   public addBond(
@@ -178,6 +283,56 @@ export class Molecule extends AggregateRoot {
     const updatedAtomResult = atom.updateElement(element);
     if (updatedAtomResult.isErr()) {
       return err(updatedAtomResult.error);
+    }
+
+    return ok();
+  }
+
+  public updateBondType(
+    atomAId: EntityId,
+    atomBId: EntityId,
+    newType: BondType,
+  ): Result<void, Error> {
+    const atomA = this._atoms.get(atomAId);
+    const atomB = this._atoms.get(atomBId);
+
+    if (!atomA || !atomB) {
+      return err(new Error("Both atoms must exist in the molecule"));
+    }
+
+    const existingBond = atomA.bonds.find(
+      (b) => b.atomIds.includes(atomAId) && b.atomIds.includes(atomBId),
+    );
+
+    if (!existingBond) {
+      return err(new Error("Bond does not exist between these atoms"));
+    }
+
+    const newBondResult = Bond.create([atomAId, atomBId], newType);
+    if (newBondResult.isErr()) {
+      return err(newBondResult.error);
+    }
+
+    const newBond = newBondResult.value;
+
+    const removeAResult = atomA.removeBond(existingBond);
+    if (removeAResult.isErr()) {
+      return err(removeAResult.error);
+    }
+
+    const removeBResult = atomB.removeBond(existingBond);
+    if (removeBResult.isErr()) {
+      return err(removeBResult.error);
+    }
+
+    const addAResult = atomA.addBond(newBond);
+    if (addAResult.isErr()) {
+      return err(addAResult.error);
+    }
+
+    const addBResult = atomB.addBond(newBond);
+    if (addBResult.isErr()) {
+      return err(addBResult.error);
     }
 
     return ok();
