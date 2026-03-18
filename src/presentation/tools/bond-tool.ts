@@ -50,7 +50,9 @@ export class BondTool implements Tool {
 
     if (this.hoveredAtomId !== atomId) {
       this.hoveredAtomId = atomId;
-      PresentationEvents.dispatch(new HoverChanged(atomId));
+      PresentationEvents.dispatch(
+        new HoverChanged(atomId ? { type: "atom", atomId } : null),
+      );
     }
   }
 

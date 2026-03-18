@@ -10,13 +10,18 @@ import { AtomAdded } from "./events/atom-added";
 import { AtomRemoved } from "./events/atom-removed";
 import { AtomUpdated } from "./events/atom-updated";
 import { BondAdded } from "./events/bond-added";
+import { BondRemoved } from "./events/bond-removed";
+import { BondUpdated } from "./events/bond-updated";
 import { PresentationEvents } from "./base/presentation-events";
 import { MoleculeRepository } from "../domain/repositories/molecule-repository";
 import { CreateMoleculeService } from "../application/use-cases/create-molecule.service";
 import { CreateAtomService } from "../application/use-cases/create-atom.service";
 import { CreateBondService } from "../application/use-cases/create-bond.service";
 import { DeleteAtomService } from "../application/use-cases/delete-atom.service";
+import { DeleteBondService } from "../application/use-cases/delete-bond.service";
 import { UpdateAtomService } from "../application/use-cases/update-atom.service";
+import { UpdateBondTypeService } from "../application/use-cases/update-bond-type.service";
+import { GetAtomOrBondAtService } from "../application/use-cases/get-atom-or-bond-at.service";
 import {
   AtomDTO,
   GetMoleculeQuery,
@@ -41,6 +46,9 @@ export class EditorApp {
   private activeMoleculeId: string = "";
   private getMoleculeService: GetMoleculeService;
   private findAtomService: FindAtomAtService;
+  private getAtomOrBondAtService: GetAtomOrBondAtService;
+  private deleteBondService: DeleteBondService;
+  private updateBondTypeService: UpdateBondTypeService;
 
   constructor(
     private container: HTMLElement,
@@ -53,6 +61,9 @@ export class EditorApp {
   ) {
     this.getMoleculeService = new GetMoleculeService(this.repository);
     this.findAtomService = new FindAtomAtService(this.repository);
+    this.getAtomOrBondAtService = new GetAtomOrBondAtService(this.repository);
+    this.deleteBondService = new DeleteBondService(this.repository);
+    this.updateBondTypeService = new UpdateBondTypeService(this.repository);
     this.canvas = document.createElement("canvas");
     this.renderer = new CanvasRenderer(this.canvas);
 
@@ -129,9 +140,12 @@ export class EditorApp {
             const atomA = moleculeDto.atoms.find((a) => a.id === bond.atomAId);
             const atomB = moleculeDto.atoms.find((a) => a.id === bond.atomBId);
             if (atomA && atomB) {
+              const isHovered = this.isBondHovered(bond.atomAId, bond.atomBId);
               this.renderer.drawBond(
                 { x: atomA.x, y: atomA.y },
                 { x: atomB.x, y: atomB.y },
+                bond.type,
+                isHovered,
               );
             }
           });
@@ -181,10 +195,29 @@ export class EditorApp {
       this.requestRedraw();
     });
 
-    PresentationEvents.subscribe(HoverChanged, (e) => {
-      this.scene.hoveredAtomId = e.atomId;
+    PresentationEvents.subscribe(BondRemoved, () => {
       this.requestRedraw();
     });
+
+    PresentationEvents.subscribe(BondUpdated, () => {
+      this.requestRedraw();
+    });
+
+    PresentationEvents.subscribe(HoverChanged, (e) => {
+      this.scene.hoveredAtomId = e.atomId;
+      this.scene.hoveredBondAtomIds = e.bondAtomIds;
+      this.requestRedraw();
+    });
+  }
+
+  private isBondHovered(atomAId: string, atomBId: string): boolean {
+    const hovered = this.scene.hoveredBondAtomIds;
+    if (!hovered) return false;
+
+    return (
+      (hovered[0] === atomAId && hovered[1] === atomBId) ||
+      (hovered[0] === atomBId && hovered[1] === atomAId)
+    );
   }
 
   private initToolbarTools(toolbar: HTMLDivElement) {
@@ -246,7 +279,8 @@ export class EditorApp {
           this.canvas,
           this.activeMoleculeId,
           this.updateAtomService,
-          this.findAtomService,
+          this.updateBondTypeService,
+          this.getAtomOrBondAtService,
         );
         break;
       case "delete":
@@ -254,7 +288,8 @@ export class EditorApp {
           this.canvas,
           this.activeMoleculeId,
           this.deleteAtomService,
-          this.findAtomService,
+          this.deleteBondService,
+          this.getAtomOrBondAtService,
         );
         break;
       default:
