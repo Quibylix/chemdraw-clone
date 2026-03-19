@@ -1,4 +1,4 @@
-import { BondType } from "../domain/entities/bond";
+import { BondType } from "../chemistry/domain/entities/bond";
 import { ScreenPoint } from "./screen-point";
 
 const BOND_LINE_WIDTH = 2;

@@ -1,5 +1,5 @@
-import { EntityId } from "../base/entity.base";
-import { ValueObject } from "../base/value-object.base";
+import { EntityId } from "../../../shared/domain/base/entity.base";
+import { ValueObject } from "../../../shared/domain/base/value-object.base";
 import { Result, ok, err } from "neverthrow";
 
 export enum BondType {

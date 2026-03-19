@@ -13,21 +13,21 @@ import { BondAdded } from "./events/bond-added";
 import { BondRemoved } from "./events/bond-removed";
 import { BondUpdated } from "./events/bond-updated";
 import { PresentationEvents } from "./base/presentation-events";
-import { MoleculeRepository } from "../domain/repositories/molecule-repository";
-import { CreateMoleculeService } from "../application/use-cases/create-molecule.service";
-import { CreateAtomService } from "../application/use-cases/create-atom.service";
-import { CreateBondService } from "../application/use-cases/create-bond.service";
-import { DeleteAtomService } from "../application/use-cases/delete-atom.service";
-import { DeleteBondService } from "../application/use-cases/delete-bond.service";
-import { UpdateAtomService } from "../application/use-cases/update-atom.service";
-import { UpdateBondTypeService } from "../application/use-cases/update-bond-type.service";
-import { GetAtomOrBondAtService } from "../application/use-cases/get-atom-or-bond-at.service";
+import { MoleculeRepository } from "../chemistry/domain/repositories/molecule-repository";
+import { CreateMoleculeService } from "../chemistry/application/use-cases/create-molecule.service";
+import { CreateAtomService } from "../chemistry/application/use-cases/create-atom.service";
+import { CreateBondService } from "../chemistry/application/use-cases/create-bond.service";
+import { DeleteAtomService } from "../chemistry/application/use-cases/delete-atom.service";
+import { DeleteBondService } from "../chemistry/application/use-cases/delete-bond.service";
+import { UpdateAtomService } from "../chemistry/application/use-cases/update-atom.service";
+import { UpdateBondTypeService } from "../chemistry/application/use-cases/update-bond-type.service";
+import { GetAtomOrBondAtService } from "../chemistry/application/use-cases/get-atom-or-bond-at.service";
 import {
   AtomDTO,
   GetMoleculeQuery,
   GetMoleculeService,
-} from "../application/use-cases/get-molecule.service";
-import { FindAtomAtService } from "../application/use-cases/find-atom-at.service";
+} from "../chemistry/application/use-cases/get-molecule.service";
+import { FindAtomAtService } from "../chemistry/application/use-cases/find-atom-at.service";
 
 const availableTools = {
   atom: "🟢 Átomo",

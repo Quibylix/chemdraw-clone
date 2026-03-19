@@ -1,4 +1,4 @@
-import { ValueObject } from "../base/value-object.base";
+import { ValueObject } from "../../../shared/domain/base/value-object.base";
 import { ElementSymbol, getElement, isValidElement } from "./elements";
 import { Result, ok, err } from "neverthrow";
 

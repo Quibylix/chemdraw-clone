@@ -1,4 +1,4 @@
-import { EntityId } from "../../domain/base/entity.base";
+import { EntityId } from "../../shared/domain/base/entity.base";
 import { PresentationEvent } from "../base/presentation-events";
 
 export type HoverTarget =

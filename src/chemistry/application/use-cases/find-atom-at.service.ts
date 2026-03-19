@@ -1,6 +1,6 @@
 import { ResultAsync, okAsync } from "neverthrow";
 import { MoleculeRepository } from "../../domain/repositories/molecule-repository";
-import { EntityId } from "../../domain/base/entity.base";
+import { EntityId } from "../../../shared/domain/base/entity.base";
 
 export class FindAtomAtQuery {
   constructor(

@@ -1,8 +1,8 @@
 import {
   CreateAtomCommand,
   CreateAtomService,
-} from "../../application/use-cases/create-atom.service";
-import { EntityId } from "../../domain/base/entity.base";
+} from "../../chemistry/application/use-cases/create-atom.service";
+import { EntityId } from "../../shared/domain/base/entity.base";
 import { PresentationEvents } from "../base/presentation-events";
 import { AtomAdded } from "../events/atom-added";
 import { Tool } from "./tool";

@@ -1,6 +1,6 @@
 import { ResultAsync } from "neverthrow";
-import { EntityId } from "../../domain/base/entity.base";
-import { ApplicationService } from "../base/application-service.base";
+import { EntityId } from "../../../shared/domain/base/entity.base";
+import { ApplicationService } from "../../../shared/application/base/application-service.base";
 import { MoleculeRepository } from "../../domain/repositories/molecule-repository";
 
 export class DeleteAtomCommand {

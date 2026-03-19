@@ -1,5 +1,5 @@
-import { AggregateRoot } from "../base/aggregate-root.base";
-import { EntityId } from "../base/entity.base";
+import { AggregateRoot } from "../../../shared/domain/base/aggregate-root.base";
+import { EntityId } from "../../../shared/domain/base/entity.base";
 import { Atom } from "./atom";
 import { ChemicalElement } from "../value-objects/chemical-element";
 import { Bond, BondType } from "./bond";

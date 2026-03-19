@@ -1,17 +1,17 @@
 import {
   DeleteAtomCommand,
   DeleteAtomService,
-} from "../../application/use-cases/delete-atom.service";
+} from "../../chemistry/application/use-cases/delete-atom.service";
 import {
   DeleteBondCommand,
   DeleteBondService,
-} from "../../application/use-cases/delete-bond.service";
-import { EntityId } from "../../domain/base/entity.base";
+} from "../../chemistry/application/use-cases/delete-bond.service";
+import { EntityId } from "../../shared/domain/base/entity.base";
 import {
   AtomOrBondDTO,
   GetAtomOrBondAtQuery,
   GetAtomOrBondAtService,
-} from "../../application/use-cases/get-atom-or-bond-at.service";
+} from "../../chemistry/application/use-cases/get-atom-or-bond-at.service";
 import { PresentationEvents } from "../base/presentation-events";
 import { AtomRemoved } from "../events/atom-removed";
 import { BondRemoved } from "../events/bond-removed";

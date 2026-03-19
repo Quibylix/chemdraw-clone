@@ -1,4 +1,4 @@
-import { Entity, EntityId } from "../base/entity.base";
+import { Entity, EntityId } from "../../../shared/domain/base/entity.base";
 import { ChemicalElement } from "../value-objects/chemical-element";
 import { Result, ok, err } from "neverthrow";
 import { Bond } from "./bond";

@@ -1,19 +1,22 @@
 import {
   UpdateAtomCommand,
   UpdateAtomService,
-} from "../../application/use-cases/update-atom.service";
+} from "../../chemistry/application/use-cases/update-atom.service";
 import {
   UpdateBondTypeCommand,
   UpdateBondTypeService,
-} from "../../application/use-cases/update-bond-type.service";
-import { EntityId } from "../../domain/base/entity.base";
-import { BondType } from "../../domain/entities/bond";
-import { ElementSymbol, ELEMENTS } from "../../domain/value-objects/elements";
+} from "../../chemistry/application/use-cases/update-bond-type.service";
+import { EntityId } from "../../shared/domain/base/entity.base";
+import { BondType } from "../../chemistry/domain/entities/bond";
+import {
+  ElementSymbol,
+  ELEMENTS,
+} from "../../chemistry/domain/value-objects/elements";
 import {
   AtomOrBondDTO,
   GetAtomOrBondAtQuery,
   GetAtomOrBondAtService,
-} from "../../application/use-cases/get-atom-or-bond-at.service";
+} from "../../chemistry/application/use-cases/get-atom-or-bond-at.service";
 import { PresentationEvents } from "../base/presentation-events";
 import { AtomUpdated } from "../events/atom-updated";
 import { BondUpdated } from "../events/bond-updated";

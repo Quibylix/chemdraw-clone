@@ -1,7 +1,7 @@
 import { ResultAsync } from "neverthrow";
-import { EntityId } from "../../domain/base/entity.base";
+import { EntityId } from "../../../shared/domain/base/entity.base";
 import { ElementSymbol } from "../../domain/value-objects/elements";
-import { ApplicationService } from "../base/application-service.base";
+import { ApplicationService } from "../../../shared/application/base/application-service.base";
 import { MoleculeRepository } from "../../domain/repositories/molecule-repository";
 
 export class UpdateAtomCommand {

@@ -1,8 +1,8 @@
-import { EntityId } from "../../domain/base/entity.base";
+import { EntityId } from "../../shared/domain/base/entity.base";
 import {
   CreateBondCommand,
   CreateBondService,
-} from "../../application/use-cases/create-bond.service";
+} from "../../chemistry/application/use-cases/create-bond.service";
 import { Tool } from "./tool";
 import { PresentationEvents } from "../base/presentation-events";
 import { BondAdded } from "../events/bond-added";
@@ -10,7 +10,7 @@ import { HoverChanged } from "../events/hover-changed";
 import {
   FindAtomAtQuery,
   FindAtomAtService,
-} from "../../application/use-cases/find-atom-at.service";
+} from "../../chemistry/application/use-cases/find-atom-at.service";
 
 export class BondTool implements Tool {
   private firstSelectedAtomId: EntityId | null = null;
