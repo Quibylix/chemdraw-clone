@@ -4,23 +4,21 @@ import {
   CreateBondService,
 } from "../../chemistry/application/use-cases/create-bond.service";
 import { Tool } from "./tool";
-import { PresentationEvents } from "../base/presentation-events";
-import { BondAdded } from "../events/bond-added";
-import { HoverChanged } from "../events/hover-changed";
 import {
   FindAtomAtQuery,
   FindAtomAtService,
 } from "../../chemistry/application/use-cases/find-atom-at.service";
+import { Scene } from "../scene";
 
 export class BondTool implements Tool {
   private firstSelectedAtomId: EntityId | null = null;
-  private hoveredAtomId: EntityId | null = null;
 
   constructor(
     private canvas: HTMLCanvasElement,
     private moleculeId: EntityId,
     private bondService: CreateBondService,
     private findAtomService: FindAtomAtService,
+    private scene: Scene,
   ) {
     this.handleClick = this.handleClick.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -35,8 +33,9 @@ export class BondTool implements Tool {
     this.canvas.removeEventListener("click", this.handleClick);
     this.canvas.removeEventListener("mousemove", this.handleMouseMove);
     this.firstSelectedAtomId = null;
-    this.hoveredAtomId = null;
-    PresentationEvents.dispatch(new HoverChanged(null));
+
+    this.scene.hoveredAtomId.value = null;
+    this.scene.hoveredBondAtomIds.value = null;
   }
 
   private async handleMouseMove(event: MouseEvent): Promise<void> {
@@ -48,11 +47,8 @@ export class BondTool implements Tool {
       .execute(new FindAtomAtQuery(this.moleculeId, x, y))
       .unwrapOr(null);
 
-    if (this.hoveredAtomId !== atomId) {
-      this.hoveredAtomId = atomId;
-      PresentationEvents.dispatch(
-        new HoverChanged(atomId ? { type: "atom", atomId } : null),
-      );
+    if (this.scene.hoveredAtomId.value !== atomId) {
+      this.scene.hoveredAtomId.value = atomId;
     }
   }
 
@@ -83,12 +79,9 @@ export class BondTool implements Tool {
       atomId,
     );
 
-    const firstSelectedAtomId = this.firstSelectedAtomId;
-    await this.bondService
-      .execute(command)
-      .map(() =>
-        PresentationEvents.dispatch(new BondAdded(firstSelectedAtomId, atomId)),
-      );
+    await this.bondService.execute(command).map((bond) => {
+      this.scene.bonds.value = [...this.scene.bonds.value, bond];
+    });
     this.firstSelectedAtomId = null;
   }
 }

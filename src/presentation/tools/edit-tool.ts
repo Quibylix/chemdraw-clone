@@ -17,10 +17,7 @@ import {
   GetAtomOrBondAtQuery,
   GetAtomOrBondAtService,
 } from "../../chemistry/application/use-cases/get-atom-or-bond-at.service";
-import { PresentationEvents } from "../base/presentation-events";
-import { AtomUpdated } from "../events/atom-updated";
-import { BondUpdated } from "../events/bond-updated";
-import { HoverChanged, HoverTarget } from "../events/hover-changed";
+import { Scene } from "../scene";
 import { Tool } from "./tool";
 
 export class EditTool implements Tool {
@@ -33,6 +30,7 @@ export class EditTool implements Tool {
     private updateAtomService: UpdateAtomService,
     private updateBondTypeService: UpdateBondTypeService,
     private getAtomOrBondAtService: GetAtomOrBondAtService,
+    private scene: Scene,
   ) {
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -51,7 +49,8 @@ export class EditTool implements Tool {
     window.removeEventListener("keydown", this.handleKeyDown);
     this.inputBuffer = "";
     this.hoveredItem = null;
-    PresentationEvents.dispatch(new HoverChanged(null));
+    this.scene.hoveredAtomId.value = null;
+    this.scene.hoveredBondAtomIds.value = null;
   }
 
   private async handleMouseMove(event: MouseEvent): Promise<void> {
@@ -69,7 +68,17 @@ export class EditTool implements Tool {
 
     this.inputBuffer = "";
     this.hoveredItem = item;
-    PresentationEvents.dispatch(new HoverChanged(this.toHoverTarget(item)));
+
+    if (!item) {
+      this.scene.hoveredAtomId.value = null;
+      this.scene.hoveredBondAtomIds.value = null;
+    } else if (item.type === "atom") {
+      this.scene.hoveredAtomId.value = item.atomId;
+      this.scene.hoveredBondAtomIds.value = null;
+    } else {
+      this.scene.hoveredAtomId.value = null;
+      this.scene.hoveredBondAtomIds.value = item.atomIds;
+    }
   }
 
   private hasHoverChanged(newItem: AtomOrBondDTO | null): boolean {
@@ -91,14 +100,6 @@ export class EditTool implements Tool {
     return true;
   }
 
-  private toHoverTarget(item: AtomOrBondDTO | null): HoverTarget {
-    if (!item) return null;
-    if (item.type === "atom") {
-      return { type: "atom", atomId: item.atomId };
-    }
-    return { type: "bond", atomIds: item.atomIds };
-  }
-
   private async handleClick(): Promise<void> {
     if (!this.hoveredItem || this.hoveredItem.type !== "bond") return;
 
@@ -113,8 +114,10 @@ export class EditTool implements Tool {
     );
 
     await this.updateBondTypeService.execute(command).map(() => {
-      PresentationEvents.dispatch(
-        new BondUpdated(bond.atomIds[0], bond.atomIds[1]),
+      this.scene.bonds.value = this.scene.bonds.value.map((b) =>
+        b.atomAId === bond.atomIds[0] && b.atomBId === bond.atomIds[1]
+          ? { ...b, type: nextType }
+          : b,
       );
     });
   }
@@ -161,7 +164,9 @@ export class EditTool implements Tool {
     );
 
     await this.updateAtomService.execute(command).map(() => {
-      PresentationEvents.dispatch(new AtomUpdated(atomId));
+      this.scene.atoms.value = this.scene.atoms.value.map((a) =>
+        a.id === atomId ? { ...a, symbol: matchedSymbol } : a,
+      );
     });
   }
 

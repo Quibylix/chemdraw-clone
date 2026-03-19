@@ -12,10 +12,7 @@ import {
   GetAtomOrBondAtQuery,
   GetAtomOrBondAtService,
 } from "../../chemistry/application/use-cases/get-atom-or-bond-at.service";
-import { PresentationEvents } from "../base/presentation-events";
-import { AtomRemoved } from "../events/atom-removed";
-import { BondRemoved } from "../events/bond-removed";
-import { HoverChanged, HoverTarget } from "../events/hover-changed";
+import { Scene } from "../scene";
 import { Tool } from "./tool";
 
 export class DeleteTool implements Tool {
@@ -27,6 +24,7 @@ export class DeleteTool implements Tool {
     private deleteAtomService: DeleteAtomService,
     private deleteBondService: DeleteBondService,
     private getAtomOrBondAtService: GetAtomOrBondAtService,
+    private scene: Scene,
   ) {
     this.handleClick = this.handleClick.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -41,7 +39,8 @@ export class DeleteTool implements Tool {
     this.canvas.removeEventListener("click", this.handleClick);
     this.canvas.removeEventListener("mousemove", this.handleMouseMove);
     this.hoveredItem = null;
-    PresentationEvents.dispatch(new HoverChanged(null));
+    this.scene.hoveredAtomId.value = null;
+    this.scene.hoveredBondAtomIds.value = null;
   }
 
   private async handleMouseMove(event: MouseEvent): Promise<void> {
@@ -58,7 +57,17 @@ export class DeleteTool implements Tool {
     }
 
     this.hoveredItem = item;
-    PresentationEvents.dispatch(new HoverChanged(this.toHoverTarget(item)));
+
+    if (!item) {
+      this.scene.hoveredAtomId.value = null;
+      this.scene.hoveredBondAtomIds.value = null;
+    } else if (item.type === "atom") {
+      this.scene.hoveredAtomId.value = item.atomId;
+      this.scene.hoveredBondAtomIds.value = null;
+    } else {
+      this.scene.hoveredAtomId.value = null;
+      this.scene.hoveredBondAtomIds.value = item.atomIds;
+    }
   }
 
   private hasHoverChanged(newItem: AtomOrBondDTO | null): boolean {
@@ -80,14 +89,6 @@ export class DeleteTool implements Tool {
     return true;
   }
 
-  private toHoverTarget(item: AtomOrBondDTO | null): HoverTarget {
-    if (!item) return null;
-    if (item.type === "atom") {
-      return { type: "atom", atomId: item.atomId };
-    }
-    return { type: "bond", atomIds: item.atomIds };
-  }
-
   private async handleClick(event: MouseEvent): Promise<void> {
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -102,7 +103,9 @@ export class DeleteTool implements Tool {
     if (item.type === "atom") {
       const command = new DeleteAtomCommand(this.moleculeId, item.atomId);
       await this.deleteAtomService.execute(command).map(() => {
-        PresentationEvents.dispatch(new AtomRemoved(item.atomId));
+        this.scene.atoms.value = this.scene.atoms.value.filter(
+          (a) => a.id !== item.atomId,
+        );
       });
     } else {
       const command = new DeleteBondCommand(
@@ -111,8 +114,13 @@ export class DeleteTool implements Tool {
         item.atomIds[1],
       );
       await this.deleteBondService.execute(command).map(() => {
-        PresentationEvents.dispatch(
-          new BondRemoved(item.atomIds[0], item.atomIds[1]),
+        this.scene.bonds.value = this.scene.bonds.value.filter(
+          (b) =>
+            !(
+              (b.atomAId === item.atomIds[0] &&
+                b.atomBId === item.atomIds[1]) ||
+              (b.atomAId === item.atomIds[1] && b.atomBId === item.atomIds[0])
+            ),
         );
       });
     }
