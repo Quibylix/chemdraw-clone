@@ -4,6 +4,13 @@ import { ApplicationService } from "../../../shared/application/base/application
 import { MoleculeRepository } from "../../domain/repositories/molecule-repository";
 import { ElementSymbol } from "../../domain/value-objects/elements";
 
+export type CreateAtomDTO = {
+  id: EntityId;
+  symbol: string;
+  x: number;
+  y: number;
+};
+
 export class CreateAtomCommand {
   constructor(
     public readonly moleculeId: EntityId,
@@ -15,16 +22,23 @@ export class CreateAtomCommand {
 
 export class CreateAtomService implements ApplicationService<
   CreateAtomCommand,
-  EntityId
+  CreateAtomDTO
 > {
   constructor(private repository: MoleculeRepository) {}
 
-  public execute(command: CreateAtomCommand): ResultAsync<EntityId, Error> {
+  public execute(
+    command: CreateAtomCommand,
+  ): ResultAsync<CreateAtomDTO, Error> {
     return this.repository.findById(command.moleculeId).andThen((molecule) => {
       return molecule
         .addAtom(command.symbol, command.x, command.y)
         .asyncAndThen((atom) =>
-          this.repository.save(molecule).map(() => atom.id),
+          this.repository.save(molecule).map(() => ({
+            id: atom.id,
+            symbol: atom.element.symbol,
+            x: command.x,
+            y: command.y,
+          })),
         );
     });
   }
