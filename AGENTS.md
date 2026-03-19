@@ -2,36 +2,66 @@
 
 This document serves as the context guide for the development of the "ChemDraw Clone" application.
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Frontend:** TypeScript, HTML5 Canvas API, Vite.
-- **Error Handling:** `neverthrow` (ResultAsync) for complex operations that may fail.
-- **Architecture:** Domain-Driven Design (DDD).
+- **Error Handling:** `neverthrow` (Result, ResultAsync) for operations that may fail.
+- **Architecture:** Domain-Driven Design (DDD) with feature-based organization.
 
-## 📁 File Structure (DDD)
+## File Structure (Feature-Based DDD)
 
-- `src/domain/`: Pure business logic, entities, value objects, and domain services.
-  - `base/`: Base abstract classes (`Entity`, `ValueObject`).
-  - `entities/`: Domain entities (e.g., `Atom`, `Bond`, `Molecule`).
-  - `value-objects/`: Immutable objects like `Point` or `Element`.
-  - `services/`: Domain-specific calculations (e.g., bond angles, valence validation).
-- `src/application/`: Use cases and commands.
-- `src/infrastructure/`: Concrete implementations (e.g., `CanvasRenderer`, `InputHandler`).
-- `src/presentation/`: UI components and layout.
+```
+src/
+├── [feature]/
+│   ├── domain/
+│   │   ├── entities/
+│   │   ├── value-objects/
+│   │   ├── events/
+│   │   └── services/
+│   ├── application/
+│   │   └── use-cases/
+│   └── infrastructure/
+│       └── repositories/
+├── shared/
+│   └── domain/
+│       └── base/           # Entity, ValueObject base classes
+├── process-managers/
+│   └── application/
+│       └── use-cases/      # Sagas for cross-context orchestration
+└── ui/
+    ├── tools/
+    ├── rendering/
+    └── events/
+```
 
-## 🧠 General Principles
+### Bounded Contexts
+
+- **chemistry/**: Molecules, atoms, bonds, chemical properties
+- **spatial/**: Drawing surfaces, atom nodes, bond edges, visual positioning
+
+### DDD Layers
+
+- **domain/**: Pure business logic, no external dependencies
+- **application/**: Use cases, commands, services that orchestrate domain operations
+- **infrastructure/**: Repository implementations, external integrations
+
+## General Principles
 
 - **Clean Code over Comments:** Code should be self-documenting. Use comments only for "why", not "what".
 - **Strict Typing:** Always use TypeScript's strict mode. Avoid `any` at all costs.
-- **DDD Purity:** The domain layer must remain agnostic of the infrastructure (no DOM or Canvas logic in `src/domain`).
+- **DDD Purity:** Domain layer must remain agnostic of infrastructure (no DOM, Canvas, or framework logic in `domain/`).
+- **No Barrel Files:** Avoid `index.ts` barrel exports. Import directly from specific files.
 - **Error Handling:** Use `neverthrow` for all domain services and application use cases that can fail.
+- **Aggregate Roots:** All state mutations go through the Aggregate Root.
+- **Cross-Context Communication:** Use Sagas to orchestrate operations across bounded contexts via IDs.
 
-## 🎨 UI Style Guide
+## UI Style Guide
 
 - Minimalist "whiteboard" aesthetic.
 - Clean vector-like rendering of chemical structures.
 
-## 🛠 Available Skills
+## Available Skills
 
+- **ddd-architecture**: Enforces Domain-Driven Design principles and proper layer separation.
 - **lib-enforcer**: Enforces DDD architectural patterns and library usage (like `neverthrow`).
 - **git-commit-helper**: Assists in generating conventional commits based on project style.
