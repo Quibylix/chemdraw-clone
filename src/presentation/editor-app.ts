@@ -5,14 +5,6 @@ import { DrawTool } from "./tools/draw-tool";
 import { BondTool } from "./tools/bond-tool";
 import { DeleteTool } from "./tools/delete-tool";
 import { EditTool } from "./tools/edit-tool";
-import { HoverChanged } from "./events/hover-changed";
-import { AtomAdded } from "./events/atom-added";
-import { AtomRemoved } from "./events/atom-removed";
-import { AtomUpdated } from "./events/atom-updated";
-import { BondAdded } from "./events/bond-added";
-import { BondRemoved } from "./events/bond-removed";
-import { BondUpdated } from "./events/bond-updated";
-import { PresentationEvents } from "./base/presentation-events";
 import { MoleculeRepository } from "../chemistry/domain/repositories/molecule-repository";
 import { CreateMoleculeService } from "../chemistry/application/use-cases/create-molecule.service";
 import { CreateAtomService } from "../chemistry/application/use-cases/create-atom.service";
@@ -22,12 +14,9 @@ import { DeleteBondService } from "../chemistry/application/use-cases/delete-bon
 import { UpdateAtomService } from "../chemistry/application/use-cases/update-atom.service";
 import { UpdateBondTypeService } from "../chemistry/application/use-cases/update-bond-type.service";
 import { GetAtomOrBondAtService } from "../chemistry/application/use-cases/get-atom-or-bond-at.service";
-import {
-  AtomDTO,
-  GetMoleculeQuery,
-  GetMoleculeService,
-} from "../chemistry/application/use-cases/get-molecule.service";
+import { AtomDTO } from "../chemistry/application/use-cases/get-molecule.service";
 import { FindAtomAtService } from "../chemistry/application/use-cases/find-atom-at.service";
+import { effect, signal } from "@preact/signals";
 
 const availableTools = {
   atom: "🟢 Átomo",
@@ -41,10 +30,9 @@ export class EditorApp {
   private renderer: CanvasRenderer;
   private currentTool: Tool | null = null;
   private scene: Scene = new Scene();
-  private isUpdatePending = false;
+  private isUpdatePending = signal(false);
 
   private activeMoleculeId: string = "";
-  private getMoleculeService: GetMoleculeService;
   private findAtomService: FindAtomAtService;
   private getAtomOrBondAtService: GetAtomOrBondAtService;
   private deleteBondService: DeleteBondService;
@@ -59,7 +47,6 @@ export class EditorApp {
     private readonly deleteAtomService: DeleteAtomService,
     private readonly updateAtomService: UpdateAtomService,
   ) {
-    this.getMoleculeService = new GetMoleculeService(this.repository);
     this.findAtomService = new FindAtomAtService(this.repository);
     this.getAtomOrBondAtService = new GetAtomOrBondAtService(this.repository);
     this.deleteBondService = new DeleteBondService(this.repository);
@@ -88,9 +75,10 @@ export class EditorApp {
     this.container.appendChild(toolbar);
     this.container.appendChild(canvasContainer);
 
-    this.subscribeToEvents();
     this.initToolbarTools(toolbar);
     this.setupCanvas(canvasContainer);
+
+    this.requestRedraw = this.requestRedraw.bind(this);
   }
 
   public async run() {
@@ -100,6 +88,7 @@ export class EditorApp {
       (id) => {
         this.activeMoleculeId = id;
         this.setTool("atom");
+        this.subscribeToEvents();
       },
       (error) => console.error(`Failed to start Editor: ${error.message}`),
     );
@@ -118,100 +107,95 @@ export class EditorApp {
   }
 
   public requestRedraw(): void {
-    if (this.isUpdatePending) return;
-    this.isUpdatePending = true;
+    if (this.isUpdatePending.value) return;
+    this.isUpdatePending.value = true;
 
     requestAnimationFrame(() => {
       this.redraw();
-      this.isUpdatePending = false;
+      this.isUpdatePending.value = false;
     });
   }
 
   private redraw() {
     if (!this.activeMoleculeId) return;
 
-    this.getMoleculeService
-      .execute(new GetMoleculeQuery(this.activeMoleculeId))
-      .match(
-        (moleculeDto) => {
-          this.renderer.clear();
+    this.renderer.clear();
 
-          moleculeDto.bonds.forEach((bond) => {
-            const atomA = moleculeDto.atoms.find((a) => a.id === bond.atomAId);
-            const atomB = moleculeDto.atoms.find((a) => a.id === bond.atomBId);
-            if (atomA && atomB) {
-              const isHovered = this.isBondHovered(bond.atomAId, bond.atomBId);
-              this.renderer.drawBond(
-                { x: atomA.x, y: atomA.y },
-                { x: atomB.x, y: atomB.y },
-                bond.type,
-                isHovered,
-              );
-            }
-          });
+    this.scene.bonds.value.forEach((bond) => {
+      const atomA = this.scene.atoms.value.find((a) => a.id === bond.atomAId);
+      const atomB = this.scene.atoms.value.find((a) => a.id === bond.atomBId);
+      if (atomA && atomB) {
+        const isHovered = this.isBondHovered(bond.atomAId, bond.atomBId);
+        this.renderer.drawBond(
+          { x: atomA.x, y: atomA.y },
+          { x: atomB.x, y: atomB.y },
+          bond.type,
+          isHovered,
+        );
+      }
+    });
 
-          const bondedAtomIds = new Set(
-            moleculeDto.bonds.flatMap((b) => [b.atomAId, b.atomBId]),
-          );
+    const bondedAtomIds = new Set(
+      this.scene.bonds.value.flatMap((b) => [b.atomAId, b.atomBId]),
+    );
 
-          const atomSortingFn = (a: AtomDTO, b: AtomDTO) => {
-            const aHighlighted = this.scene.hoveredAtomId === a.id;
-            const bHighlighted = this.scene.hoveredAtomId === b.id;
-            if (aHighlighted && !bHighlighted) return 1;
-            if (!aHighlighted && bHighlighted) return -1;
-            return 0;
-          };
+    const atomSortingFn = (a: AtomDTO, b: AtomDTO) => {
+      const aHighlighted = this.scene.hoveredAtomId.value === a.id;
+      const bHighlighted = this.scene.hoveredAtomId.value === b.id;
+      if (aHighlighted && !bHighlighted) return 1;
+      if (!aHighlighted && bHighlighted) return -1;
+      return 0;
+    };
 
-          moleculeDto.atoms.sort(atomSortingFn).forEach((atom) => {
-            const isHovered = this.scene.hoveredAtomId === atom.id;
-            const hasBonds = bondedAtomIds.has(atom.id);
+    this.scene.atoms.value.sort(atomSortingFn).forEach((atom) => {
+      const isHovered = this.scene.hoveredAtomId.value === atom.id;
+      const hasBonds = bondedAtomIds.has(atom.id);
 
-            this.renderer.drawAtom(
-              { symbol: atom.symbol },
-              { x: atom.x, y: atom.y },
-              isHovered,
-              hasBonds,
-            );
-          });
-        },
-        (error) => console.error(error),
+      this.renderer.drawAtom(
+        { symbol: atom.symbol },
+        { x: atom.x, y: atom.y },
+        isHovered,
+        hasBonds,
       );
+    });
   }
 
   private subscribeToEvents() {
-    PresentationEvents.subscribe(AtomAdded, () => {
+    effect(() => {
       this.requestRedraw();
     });
 
-    PresentationEvents.subscribe(AtomRemoved, () => {
-      this.requestRedraw();
-    });
+    // PresentationEvents.subscribe(AtomAdded, () => {});
+    //
+    // PresentationEvents.subscribe(AtomRemoved, () => {
+    //   this.requestRedraw();
+    // });
+    //
+    // PresentationEvents.subscribe(AtomUpdated, () => {
+    //   this.requestRedraw();
+    // });
+    //
+    // PresentationEvents.subscribe(BondAdded, () => {
+    //   this.requestRedraw();
+    // });
+    //
+    // PresentationEvents.subscribe(BondRemoved, () => {
+    //   this.requestRedraw();
+    // });
+    //
+    // PresentationEvents.subscribe(BondUpdated, () => {
+    //   this.requestRedraw();
+    // });
 
-    PresentationEvents.subscribe(AtomUpdated, () => {
-      this.requestRedraw();
-    });
-
-    PresentationEvents.subscribe(BondAdded, () => {
-      this.requestRedraw();
-    });
-
-    PresentationEvents.subscribe(BondRemoved, () => {
-      this.requestRedraw();
-    });
-
-    PresentationEvents.subscribe(BondUpdated, () => {
-      this.requestRedraw();
-    });
-
-    PresentationEvents.subscribe(HoverChanged, (e) => {
-      this.scene.hoveredAtomId = e.atomId;
-      this.scene.hoveredBondAtomIds = e.bondAtomIds;
-      this.requestRedraw();
-    });
+    // PresentationEvents.subscribe(HoverChanged, (e) => {
+    //   this.scene.hoveredAtomId.value = e.atomId;
+    //   this.scene.hoveredBondAtomIds.value = e.bondAtomIds;
+    //   this.requestRedraw();
+    // });
   }
 
   private isBondHovered(atomAId: string, atomBId: string): boolean {
-    const hovered = this.scene.hoveredBondAtomIds;
+    const hovered = this.scene.hoveredBondAtomIds.value;
     if (!hovered) return false;
 
     return (
@@ -264,6 +248,7 @@ export class EditorApp {
           this.canvas,
           this.activeMoleculeId,
           this.createAtomService,
+          this.scene,
         );
         break;
       case "bond":
@@ -272,6 +257,7 @@ export class EditorApp {
           this.activeMoleculeId,
           this.createBondService,
           this.findAtomService,
+          this.scene,
         );
         break;
       case "edit":
@@ -281,6 +267,7 @@ export class EditorApp {
           this.updateAtomService,
           this.updateBondTypeService,
           this.getAtomOrBondAtService,
+          this.scene,
         );
         break;
       case "delete":
@@ -290,6 +277,7 @@ export class EditorApp {
           this.deleteAtomService,
           this.deleteBondService,
           this.getAtomOrBondAtService,
+          this.scene,
         );
         break;
       default:
