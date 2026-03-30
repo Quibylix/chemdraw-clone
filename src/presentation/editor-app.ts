@@ -5,7 +5,6 @@ import { DrawTool } from "./tools/draw-tool";
 import { BondTool } from "./tools/bond-tool";
 import { DeleteTool } from "./tools/delete-tool";
 import { EditTool } from "./tools/edit-tool";
-import { MoleculeRepository } from "../chemistry/domain/repositories/molecule-repository";
 import { CreateMoleculeService } from "../chemistry/application/use-cases/create-molecule.service";
 import { CreateAtomService } from "../chemistry/application/use-cases/create-atom.service";
 import { CreateBondService } from "../chemistry/application/use-cases/create-bond.service";
@@ -19,10 +18,10 @@ import { FindAtomAtService } from "../chemistry/application/use-cases/find-atom-
 import { effect, signal } from "@preact/signals";
 
 const availableTools = {
-  atom: "🟢 Átomo",
-  bond: "🔗 Enlace",
-  edit: "✏️ Editar",
-  delete: "🗑️ Borrar",
+  atom: "🟢 Atom",
+  bond: "🔗 Bond",
+  edit: "✏️ Edit",
+  delete: "🗑️ Delete",
 };
 
 export class EditorApp {
@@ -30,27 +29,21 @@ export class EditorApp {
   private renderer: CanvasRenderer;
   private currentTool: Tool | null = null;
   private scene: Scene = new Scene();
-  private isUpdatePending = signal(false);
 
-  private activeMoleculeId: string = "";
-  private findAtomService: FindAtomAtService;
-  private getAtomOrBondAtService: GetAtomOrBondAtService;
-  private deleteBondService: DeleteBondService;
-  private updateBondTypeService: UpdateBondTypeService;
+  private activeMoleculeId = signal("");
 
   constructor(
     private container: HTMLElement,
-    private readonly repository: MoleculeRepository,
     private readonly createMoleculeService: CreateMoleculeService,
     private readonly createAtomService: CreateAtomService,
     private readonly createBondService: CreateBondService,
     private readonly deleteAtomService: DeleteAtomService,
     private readonly updateAtomService: UpdateAtomService,
+    private readonly findAtomService: FindAtomAtService,
+    private readonly getAtomOrBondAtService: GetAtomOrBondAtService,
+    private readonly deleteBondService: DeleteBondService,
+    private readonly updateBondTypeService: UpdateBondTypeService,
   ) {
-    this.findAtomService = new FindAtomAtService(this.repository);
-    this.getAtomOrBondAtService = new GetAtomOrBondAtService(this.repository);
-    this.deleteBondService = new DeleteBondService(this.repository);
-    this.updateBondTypeService = new UpdateBondTypeService(this.repository);
     this.canvas = document.createElement("canvas");
     this.renderer = new CanvasRenderer(this.canvas);
 
@@ -77,8 +70,6 @@ export class EditorApp {
 
     this.initToolbarTools(toolbar);
     this.setupCanvas(canvasContainer);
-
-    this.requestRedraw = this.requestRedraw.bind(this);
   }
 
   public async run() {
@@ -86,19 +77,20 @@ export class EditorApp {
 
     setupResult.match(
       (id) => {
-        this.activeMoleculeId = id;
+        this.activeMoleculeId.value = id;
         this.setTool("atom");
-        this.subscribeToEvents();
       },
       (error) => console.error(`Failed to start Editor: ${error.message}`),
     );
+
+    effect(() => this.draw());
   }
 
   private setupCanvas(canvasContainer: HTMLDivElement) {
     const resizeCanvas = () => {
       this.canvas.width = canvasContainer.getBoundingClientRect().width;
       this.canvas.height = canvasContainer.getBoundingClientRect().height;
-      this.requestRedraw();
+      this.draw();
     };
     const resizeObserver = new ResizeObserver(resizeCanvas);
     resizeObserver.observe(canvasContainer);
@@ -106,18 +98,8 @@ export class EditorApp {
     resizeCanvas();
   }
 
-  public requestRedraw(): void {
-    if (this.isUpdatePending.value) return;
-    this.isUpdatePending.value = true;
-
-    requestAnimationFrame(() => {
-      this.redraw();
-      this.isUpdatePending.value = false;
-    });
-  }
-
-  private redraw() {
-    if (!this.activeMoleculeId) return;
+  private draw() {
+    if (!this.activeMoleculeId.value) return;
 
     this.renderer.clear();
 
@@ -147,7 +129,7 @@ export class EditorApp {
       return 0;
     };
 
-    this.scene.atoms.value.sort(atomSortingFn).forEach((atom) => {
+    [...this.scene.atoms.value].sort(atomSortingFn).forEach((atom) => {
       const isHovered = this.scene.hoveredAtomId.value === atom.id;
       const hasBonds = bondedAtomIds.has(atom.id);
 
@@ -158,40 +140,6 @@ export class EditorApp {
         hasBonds,
       );
     });
-  }
-
-  private subscribeToEvents() {
-    effect(() => {
-      this.requestRedraw();
-    });
-
-    // PresentationEvents.subscribe(AtomAdded, () => {});
-    //
-    // PresentationEvents.subscribe(AtomRemoved, () => {
-    //   this.requestRedraw();
-    // });
-    //
-    // PresentationEvents.subscribe(AtomUpdated, () => {
-    //   this.requestRedraw();
-    // });
-    //
-    // PresentationEvents.subscribe(BondAdded, () => {
-    //   this.requestRedraw();
-    // });
-    //
-    // PresentationEvents.subscribe(BondRemoved, () => {
-    //   this.requestRedraw();
-    // });
-    //
-    // PresentationEvents.subscribe(BondUpdated, () => {
-    //   this.requestRedraw();
-    // });
-
-    // PresentationEvents.subscribe(HoverChanged, (e) => {
-    //   this.scene.hoveredAtomId.value = e.atomId;
-    //   this.scene.hoveredBondAtomIds.value = e.bondAtomIds;
-    //   this.requestRedraw();
-    // });
   }
 
   private isBondHovered(atomAId: string, atomBId: string): boolean {
@@ -246,7 +194,7 @@ export class EditorApp {
       case "atom":
         tool = new DrawTool(
           this.canvas,
-          this.activeMoleculeId,
+          this.activeMoleculeId.value,
           this.createAtomService,
           this.scene,
         );
@@ -254,7 +202,7 @@ export class EditorApp {
       case "bond":
         tool = new BondTool(
           this.canvas,
-          this.activeMoleculeId,
+          this.activeMoleculeId.value,
           this.createBondService,
           this.findAtomService,
           this.scene,
@@ -263,7 +211,7 @@ export class EditorApp {
       case "edit":
         tool = new EditTool(
           this.canvas,
-          this.activeMoleculeId,
+          this.activeMoleculeId.value,
           this.updateAtomService,
           this.updateBondTypeService,
           this.getAtomOrBondAtService,
@@ -273,7 +221,7 @@ export class EditorApp {
       case "delete":
         tool = new DeleteTool(
           this.canvas,
-          this.activeMoleculeId,
+          this.activeMoleculeId.value,
           this.deleteAtomService,
           this.deleteBondService,
           this.getAtomOrBondAtService,
