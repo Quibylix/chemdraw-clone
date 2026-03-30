@@ -106,6 +106,10 @@ export class DeleteTool implements Tool {
         this.scene.atoms.value = this.scene.atoms.value.filter(
           (a) => a.id !== item.atomId,
         );
+
+        this.scene.bonds.value = this.scene.bonds.value.filter(
+          (b) => b.atomAId !== item.atomId && b.atomBId !== item.atomId,
+        );
       });
     } else {
       const command = new DeleteBondCommand(
