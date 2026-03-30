@@ -1,5 +1,5 @@
 import { ValueObject } from "../../../shared/domain/base/value-object.base";
-import { ElementSymbol, getElement, isValidElement } from "./elements";
+import { ELEMENTS, ElementSymbol } from "./elements";
 import { Result, ok, err } from "neverthrow";
 
 export type ChemicalElementProps = Readonly<{
@@ -35,12 +35,12 @@ export class ChemicalElement extends ValueObject<ChemicalElementProps> {
     return [...this.props.commonValencies];
   }
 
-  public static create(symbol: ElementSymbol): Result<ChemicalElement, Error> {
-    if (!isValidElement(symbol)) {
+  public static create(symbol: string): Result<ChemicalElement, Error> {
+    if (!Object.hasOwn(ELEMENTS, symbol)) {
       return err(new Error(`Invalid element symbol: ${symbol}`));
     }
 
-    const elementData = getElement(symbol)!;
+    const elementData = ELEMENTS[symbol as ElementSymbol];
     return ok(
       new ChemicalElement({
         symbol: elementData.symbol,
