@@ -31,7 +31,6 @@ export class DrawTool implements Tool {
 
     const command = new CreateAtomCommand(this.moleculeId, "C", x, y);
     await this.service.execute(command).map((atomDto) => {
-      console.log(atomDto);
       this.scene.atoms.value = [...this.scene.atoms.value, atomDto];
     });
   }
