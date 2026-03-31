@@ -3,7 +3,6 @@ import {
   CreateAtomService,
 } from "../../chemistry/application/use-cases/create-atom.service";
 import { EntityId } from "../../shared/domain/base/entity.base";
-import { Scene } from "../scene";
 import { Tool } from "./tool";
 
 export class DrawTool implements Tool {
@@ -11,7 +10,6 @@ export class DrawTool implements Tool {
     private canvas: HTMLCanvasElement,
     private moleculeId: EntityId,
     private service: CreateAtomService,
-    private scene: Scene,
   ) {
     this.handleClick = this.handleClick.bind(this);
   }
@@ -30,8 +28,6 @@ export class DrawTool implements Tool {
     const y = event.clientY - rect.top;
 
     const command = new CreateAtomCommand(this.moleculeId, "C", x, y);
-    await this.service.execute(command).map((atomDto) => {
-      this.scene.atoms.value = [...this.scene.atoms.value, atomDto];
-    });
+    await this.service.execute(command);
   }
 }

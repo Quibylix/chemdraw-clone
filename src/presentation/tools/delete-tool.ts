@@ -102,31 +102,14 @@ export class DeleteTool implements Tool {
 
     if (item.type === "atom") {
       const command = new DeleteAtomCommand(this.moleculeId, item.atomId);
-      await this.deleteAtomService.execute(command).map(() => {
-        this.scene.atoms.value = this.scene.atoms.value.filter(
-          (a) => a.id !== item.atomId,
-        );
-
-        this.scene.bonds.value = this.scene.bonds.value.filter(
-          (b) => b.atomAId !== item.atomId && b.atomBId !== item.atomId,
-        );
-      });
+      await this.deleteAtomService.execute(command);
     } else {
       const command = new DeleteBondCommand(
         this.moleculeId,
         item.atomIds[0],
         item.atomIds[1],
       );
-      await this.deleteBondService.execute(command).map(() => {
-        this.scene.bonds.value = this.scene.bonds.value.filter(
-          (b) =>
-            !(
-              (b.atomAId === item.atomIds[0] &&
-                b.atomBId === item.atomIds[1]) ||
-              (b.atomAId === item.atomIds[1] && b.atomBId === item.atomIds[0])
-            ),
-        );
-      });
+      await this.deleteBondService.execute(command);
     }
   }
 }

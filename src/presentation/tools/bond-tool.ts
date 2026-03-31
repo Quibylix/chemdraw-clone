@@ -79,9 +79,8 @@ export class BondTool implements Tool {
       atomId,
     );
 
-    await this.bondService.execute(command).map((bond) => {
-      this.scene.bonds.value = [...this.scene.bonds.value, bond];
+    await this.bondService.execute(command).map(() => {
+      this.firstSelectedAtomId = null;
     });
-    this.firstSelectedAtomId = null;
   }
 }

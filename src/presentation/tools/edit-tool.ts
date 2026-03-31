@@ -113,13 +113,7 @@ export class EditTool implements Tool {
       nextType,
     );
 
-    await this.updateBondTypeService.execute(command).map(() => {
-      this.scene.bonds.value = this.scene.bonds.value.map((b) =>
-        b.atomAId === bond.atomIds[0] && b.atomBId === bond.atomIds[1]
-          ? { ...b, type: nextType }
-          : b,
-      );
-    });
+    await this.updateBondTypeService.execute(command);
   }
 
   private getNextBondType(current: BondType): BondType {
@@ -163,11 +157,7 @@ export class EditTool implements Tool {
       matchedSymbol,
     );
 
-    await this.updateAtomService.execute(command).map(() => {
-      this.scene.atoms.value = this.scene.atoms.value.map((a) =>
-        a.id === atomId ? { ...a, symbol: matchedSymbol } : a,
-      );
-    });
+    await this.updateAtomService.execute(command);
   }
 
   private findMatchingElement(buffer: string): ElementSymbol | null {

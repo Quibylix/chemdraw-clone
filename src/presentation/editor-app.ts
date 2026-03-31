@@ -25,10 +25,11 @@ const availableTools = {
 };
 
 export class EditorApp {
+  private _scene: Scene = new Scene();
+
   private canvas: HTMLCanvasElement;
   private renderer: CanvasRenderer;
   private currentTool: Tool | null = null;
-  private scene: Scene = new Scene();
 
   private activeMoleculeId = signal("");
 
@@ -103,9 +104,9 @@ export class EditorApp {
 
     this.renderer.clear();
 
-    this.scene.bonds.value.forEach((bond) => {
-      const atomA = this.scene.atoms.value.find((a) => a.id === bond.atomAId);
-      const atomB = this.scene.atoms.value.find((a) => a.id === bond.atomBId);
+    this._scene.bonds.value.forEach((bond) => {
+      const atomA = this._scene.atoms.value.find((a) => a.id === bond.atomAId);
+      const atomB = this._scene.atoms.value.find((a) => a.id === bond.atomBId);
       if (atomA && atomB) {
         const isHovered = this.isBondHovered(bond.atomAId, bond.atomBId);
         this.renderer.drawBond(
@@ -118,19 +119,19 @@ export class EditorApp {
     });
 
     const bondedAtomIds = new Set(
-      this.scene.bonds.value.flatMap((b) => [b.atomAId, b.atomBId]),
+      this._scene.bonds.value.flatMap((b) => [b.atomAId, b.atomBId]),
     );
 
     const atomSortingFn = (a: AtomDTO, b: AtomDTO) => {
-      const aHighlighted = this.scene.hoveredAtomId.value === a.id;
-      const bHighlighted = this.scene.hoveredAtomId.value === b.id;
+      const aHighlighted = this._scene.hoveredAtomId.value === a.id;
+      const bHighlighted = this._scene.hoveredAtomId.value === b.id;
       if (aHighlighted && !bHighlighted) return 1;
       if (!aHighlighted && bHighlighted) return -1;
       return 0;
     };
 
-    [...this.scene.atoms.value].sort(atomSortingFn).forEach((atom) => {
-      const isHovered = this.scene.hoveredAtomId.value === atom.id;
+    [...this._scene.atoms.value].sort(atomSortingFn).forEach((atom) => {
+      const isHovered = this._scene.hoveredAtomId.value === atom.id;
       const hasBonds = bondedAtomIds.has(atom.id);
 
       this.renderer.drawAtom(
@@ -143,7 +144,7 @@ export class EditorApp {
   }
 
   private isBondHovered(atomAId: string, atomBId: string): boolean {
-    const hovered = this.scene.hoveredBondAtomIds.value;
+    const hovered = this._scene.hoveredBondAtomIds.value;
     if (!hovered) return false;
 
     return (
@@ -196,7 +197,6 @@ export class EditorApp {
           this.canvas,
           this.activeMoleculeId.value,
           this.createAtomService,
-          this.scene,
         );
         break;
       case "bond":
@@ -205,7 +205,7 @@ export class EditorApp {
           this.activeMoleculeId.value,
           this.createBondService,
           this.findAtomService,
-          this.scene,
+          this._scene,
         );
         break;
       case "edit":
@@ -215,7 +215,7 @@ export class EditorApp {
           this.updateAtomService,
           this.updateBondTypeService,
           this.getAtomOrBondAtService,
-          this.scene,
+          this._scene,
         );
         break;
       case "delete":
@@ -225,7 +225,7 @@ export class EditorApp {
           this.deleteAtomService,
           this.deleteBondService,
           this.getAtomOrBondAtService,
-          this.scene,
+          this._scene,
         );
         break;
       default:
@@ -239,5 +239,9 @@ export class EditorApp {
     }
     this.currentTool = tool;
     this.currentTool.activate();
+  }
+
+  public get scene(): Scene {
+    return this._scene;
   }
 }
