@@ -10,22 +10,34 @@ import { FindAtomAtService } from "./chemistry/application/use-cases/find-atom-a
 import { GetAtomOrBondAtService } from "./chemistry/application/use-cases/get-atom-or-bond-at.service";
 import { DeleteBondService } from "./chemistry/application/use-cases/delete-bond.service";
 import { UpdateBondTypeService } from "./chemistry/application/use-cases/update-bond-type.service";
+import { InMemoryDomainEventBus } from "./chemistry/infrastructure/event-bus/in-memory-domain-event-bus";
+import { InMemoryIntegrationEventBus } from "./shared/infrastructure/event-bus/in-memory-integration-event-bus";
+import { registerHandlers } from "./chemistry/application/handlers";
+import { IntegrationEventListener } from "./presentation/integration-event-listener";
 
 const container = document.querySelector<HTMLDivElement>("#app")!;
 
 const repository = new InMemoryMoleculeRepository();
 
+const domainEventBus = new InMemoryDomainEventBus();
+const integrationEventBus = new InMemoryIntegrationEventBus();
+
+registerHandlers(domainEventBus, integrationEventBus);
+
 const createMoleculeService = new CreateMoleculeService(repository);
-const createAtomService = new CreateAtomService(repository);
-const createBondService = new CreateBondService(repository);
-const deleteAtomService = new DeleteAtomService(repository);
-const updateAtomService = new UpdateAtomService(repository);
+const createAtomService = new CreateAtomService(repository, domainEventBus);
+const createBondService = new CreateBondService(repository, domainEventBus);
+const deleteAtomService = new DeleteAtomService(repository, domainEventBus);
+const updateAtomService = new UpdateAtomService(repository, domainEventBus);
 const findAtomService = new FindAtomAtService(repository);
 const getAtomOrBondAtService = new GetAtomOrBondAtService(repository);
-const deleteBondService = new DeleteBondService(repository);
-const updateBondTypeService = new UpdateBondTypeService(repository);
+const deleteBondService = new DeleteBondService(repository, domainEventBus);
+const updateBondTypeService = new UpdateBondTypeService(
+  repository,
+  domainEventBus,
+);
 
-new EditorApp(
+const editorApp = new EditorApp(
   container,
   createMoleculeService,
   createAtomService,
@@ -36,4 +48,12 @@ new EditorApp(
   getAtomOrBondAtService,
   deleteBondService,
   updateBondTypeService,
-).run();
+);
+
+const eventListener = new IntegrationEventListener(
+  integrationEventBus,
+  editorApp.scene,
+);
+eventListener.subscribe();
+
+editorApp.run();
