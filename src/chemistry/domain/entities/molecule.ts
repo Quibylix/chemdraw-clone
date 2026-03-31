@@ -5,6 +5,12 @@ import { ChemicalElement } from "../value-objects/chemical-element";
 import { Bond, BondType } from "./bond";
 import { Result, ok, err } from "neverthrow";
 import { ElementSymbol } from "../value-objects/elements";
+import { AtomCreatedEvent } from "../events/atom-created.event";
+import { AtomDeletedEvent } from "../events/atom-deleted.event";
+import { AtomUpdatedEvent } from "../events/atom-updated.event";
+import { BondCreatedEvent } from "../events/bond-created.event";
+import { BondDeletedEvent } from "../events/bond-deleted.event";
+import { BondUpdatedEvent } from "../events/bond-updated.event";
 
 export type AtomOrBondResult =
   | { type: "atom"; item: Atom }
@@ -58,6 +64,8 @@ export class Molecule extends AggregateRoot {
 
     const atom = atomResult.value;
     this._atoms.set(atom.id, atom);
+
+    this.addDomainEvent(new AtomCreatedEvent(this.id, atom.id, symbol, x, y));
 
     return ok(atom);
   }
@@ -202,7 +210,12 @@ export class Molecule extends AggregateRoot {
     return atomA
       .addBond(bond)
       .andThen(() => atomB.addBond(bond))
-      .map(() => bond);
+      .map(() => {
+        this.addDomainEvent(
+          new BondCreatedEvent(this.id, atomAId, atomBId, type),
+        );
+        return bond;
+      });
   }
 
   public removeAtom(atomId: EntityId): Result<void, Error> {
@@ -229,9 +242,12 @@ export class Molecule extends AggregateRoot {
       if (removeResult.isErr()) {
         return err(removeResult.error);
       }
+
+      this.addDomainEvent(new BondDeletedEvent(this.id, atomId, otherAtomId));
     }
 
     this._atoms.delete(atomId);
+    this.addDomainEvent(new AtomDeletedEvent(this.id, atomId));
     return ok();
   }
 
@@ -261,6 +277,8 @@ export class Molecule extends AggregateRoot {
       return err(resultB.error);
     }
 
+    this.addDomainEvent(new BondDeletedEvent(this.id, atomAId, atomBId));
+
     return ok();
   }
 
@@ -284,6 +302,10 @@ export class Molecule extends AggregateRoot {
     if (updatedAtomResult.isErr()) {
       return err(updatedAtomResult.error);
     }
+
+    this.addDomainEvent(
+      new AtomUpdatedEvent(this.id, atomId, atom.element.symbol, symbol),
+    );
 
     return ok();
   }
@@ -334,6 +356,16 @@ export class Molecule extends AggregateRoot {
     if (addBResult.isErr()) {
       return err(addBResult.error);
     }
+
+    this.addDomainEvent(
+      new BondUpdatedEvent(
+        this.id,
+        atomAId,
+        atomBId,
+        existingBond.type,
+        newType,
+      ),
+    );
 
     return ok();
   }
